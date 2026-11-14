@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Circuit Coach - Teacher results</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiNmZjdhMDAiLz48cmVjdCB4PSIxMiIgeT0iMTMiIHdpZHRoPSI0MCIgaGVpZ2h0PSIzOCIgcng9IjUiIGZpbGw9IiNmZmZmZmYiLz48cGF0aCBkPSJNMTIgMThhNSA1IDAgMCAxIDUtNWgzMGE1IDUgMCAwIDEgNSA1djVIMTJ6IiBmaWxsPSIjMmExNDAwIi8+PHJlY3QgeD0iMTgiIHk9IjI5IiB3aWR0aD0iMjgiIGhlaWdodD0iNCIgcng9IjIiIGZpbGw9IiMyYTE0MDAiIG9wYWNpdHk9Ii41Ii8+PHJlY3QgeD0iMTgiIHk9IjM3IiB3aWR0aD0iMjgiIGhlaWdodD0iNCIgcng9IjIiIGZpbGw9IiMyYTE0MDAiIG9wYWNpdHk9Ii41Ii8+PHJlY3QgeD0iMTgiIHk9IjQ1IiB3aWR0aD0iMTciIGhlaWdodD0iNCIgcng9IjIiIGZpbGw9IiMyYTE0MDAiIG9wYWNpdHk9Ii41Ii8+PC9zdmc+">
+<link rel="apple-touch-icon" href="icon-teacher.png">
+<meta name="theme-color" content="#ff7a00">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -81,6 +84,7 @@ details summary{cursor:pointer;font-weight:600}
     <div class="row">
       <button class="btn" id="load" type="button">Load results</button>
       <label style="flex-direction:row;align-items:center;gap:6px;font-weight:400"><input type="checkbox" id="remember" style="width:auto" checked> Remember on this computer</label>
+      <a class="btn ghost" id="sheetLink" href="#" target="_blank" rel="noopener" hidden style="text-decoration:none">Open the Google Sheet</a>
       <span class="meta" id="loadMsg"></span>
     </div>
     <div class="fb bad" id="err" hidden></div>
@@ -258,6 +262,10 @@ $('load').addEventListener('click',async()=>{
     if(!r.ok)throw new Error('The server answered '+r.status+'.');
     const d=JSON.parse(await r.text());
     if(!d.ok)throw new Error(d.error==='wrong key'?'Wrong secret key.':'The server said: '+d.error);
+    // the sheet's address comes from the server, so it is not written in this page
+    if(d.sheetUrl&&/^https:\/\/docs\.google\.com\/[^\s"']+$/.test(d.sheetUrl)){
+      const a=$('sheetLink');a.href=d.sheetUrl;a.hidden=false;
+    }
     const subs=[],bad=[];
     (d.rows||[]).forEach(row=>{const res=decodeCode(row.code);if(res.err)bad.push(res.err);else subs.push(res.ok)});
     if(!subs.length){$('loadMsg').textContent='';$('err').textContent=bad.length?'No readable results yet ('+bad.length+' damaged).':'No results yet. Ask a student to press Submit.';$('err').hidden=false;$('out').hidden=true;return}

@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circuit Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: lab bench. A bright header strip with one LED per question, diagram on graph paper at left, working area at right. */
+:root{
+  --bg:#e6f3ff; --paper:#ffffff; --ink:#0f2238; --muted:#4a6178; --primary:#1f5fff; --primary-ink:#ffffff; --accent:#ff7a00;
+  --line:#c3d6ea; --grid:#d3e5f8;
+  --good:#079a55; --goodbg:#d9f7e7; --bad:#d92d1b; --badbg:#ffe3de; --warn:#8a5200; --warnbg:#fff0bf; --hintbar:#ffb400;
+  --bulb:#ffd23f; --res:#ffd6b0; --am:#ffe2c8; --vm:#d2ebff; --pos:#e0301e; --neg:#1f5fff;
+  --m1:#d92d1b; --m2:#7a3cff; --m3:#079a55; --m4:#0a74e0; --mt:#ffffff;
+  --display:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif; --body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1624; --paper:#15243a; --ink:#e8f0f9; --muted:#9fb3c8; --primary:#4d8bff; --primary-ink:#06142e; --accent:#ff9a33;
+    --line:#2b4160; --grid:#1c2f49; --good:#4fe09a; --goodbg:#0f3322; --bad:#ff8a78; --badbg:#3d1a18; --warn:#ffd36b; --warnbg:#3a2c08; --hintbar:#ffc233;
+    --bulb:#c9a521; --res:#8a5a30; --am:#4a3322; --vm:#1d3b58; --pos:#ff7a68; --neg:#6aa2ff;
+    --m1:#ff8a78; --m2:#b79cff; --m3:#4fe09a; --m4:#62b4ff; --mt:#0a1626; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1624; --paper:#15243a; --ink:#e8f0f9; --muted:#9fb3c8; --primary:#4d8bff; --primary-ink:#06142e; --accent:#ff9a33;
+  --line:#2b4160; --grid:#1c2f49; --good:#4fe09a; --goodbg:#0f3322; --bad:#ff8a78; --badbg:#3d1a18; --warn:#ffd36b; --warnbg:#3a2c08; --hintbar:#ffc233;
+  --bulb:#c9a521; --res:#8a5a30; --am:#4a3322; --vm:#1d3b58; --pos:#ff7a68; --neg:#6aa2ff;
+  --m1:#ff8a78; --m2:#b79cff; --m3:#4fe09a; --m4:#62b4ff; --mt:#0a1626; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1100px;margin:0 auto;padding:16px 16px 56px;display:flex;flex-direction:column;gap:16px}
+.hero{background:var(--primary);color:#fff;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.hero h1{color:#fff;font-family:var(--display);font-size:1.9rem;line-height:1.1;margin:0;text-wrap:balance}
+.hero p{margin:2px 0 0;color:#fff}
+.hero-top{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;align-items:flex-end}
+.count{font-family:var(--mono);font-weight:600}
+.leds{display:flex;gap:3px}
+.leds i{flex:1;height:14px;border-radius:4px;background:rgba(255,255,255,.28);min-width:4px}
+.leds i.on{background:#3df08f;box-shadow:0 0 6px #3df08f}
+.leds i.cur{outline:2px solid currentColor;outline-offset:1px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card h2{font-size:1.15rem;margin:0;font-family:var(--display)}
+.who{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:700px){.who{grid-template-columns:minmax(0,1fr)}}
+.who label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:600;color:var(--muted)}
+.who select,.who input{padding:9px 10px;border:2px solid var(--line);border-radius:10px;background:var(--paper);font-size:1rem;color:var(--ink)}
+.who .ok{border-color:var(--good)}
+.who input[list]{padding-right:40px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath d='M2 2l6 6 6-6' fill='none' stroke='%231f5fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.who input[list]::-webkit-calendar-picker-indicator{opacity:0;cursor:pointer;width:34px;margin-right:-8px}
+nav{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:2px solid var(--line);background:var(--paper);border-radius:10px;padding:6px 10px;cursor:pointer;font-size:.92rem;display:flex;gap:8px;align-items:center}
+.chip small{font-family:var(--mono);color:var(--muted)}
+.chip.done{background:var(--goodbg);border-color:var(--good)}
+.chip.done small{color:var(--good);font-weight:600}
+.chip[aria-current="true"]{background:var(--primary);border-color:var(--primary);color:var(--primary-ink);font-weight:600}
+.chip[aria-current="true"] small{color:var(--primary-ink)}
+main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){main{grid-template-columns:minmax(0,1fr)}}
+.kicker{font-family:var(--mono);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:600}
+.prompt{font-size:1.05rem;margin:0}
+.paper{border:2px solid var(--line);border-radius:10px;background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:20px 20px;overflow-x:auto}
+.paper svg{display:block;width:100%;height:auto;min-width:300px;max-height:430px}
+svg .wire{stroke:var(--ink);stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+svg .vwire{stroke:var(--ink);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none}
+svg .sp{fill:var(--paper);stroke:var(--ink);stroke-width:2.6}
+svg .res{fill:var(--res);stroke:var(--ink);stroke-width:2.6}
+svg .bulb{fill:var(--bulb);stroke:var(--ink);stroke-width:2.6}
+svg .dot{fill:var(--ink)}
+svg .plus{stroke:var(--pos);stroke-width:3.6;stroke-linecap:round}
+svg .minus{stroke:var(--neg);stroke-width:3.6;stroke-linecap:round}
+svg text{font-family:var(--mono);fill:var(--ink);font-size:13px}
+svg .meterc{stroke:var(--ink);stroke-width:2.6}
+svg .meterc.am{fill:var(--am)} svg .meterc.vm{fill:var(--vm)}
+svg .meterc.m1{stroke:var(--m1);stroke-width:4.4} svg .meterc.m2{stroke:var(--m2);stroke-width:4.4}
+svg .meterc.m3{stroke:var(--m3);stroke-width:4.4} svg .meterc.m4{stroke:var(--m4);stroke-width:4.4}
+svg .meterc.mu{stroke:var(--accent);stroke-width:4.4}
+svg .meterletter{font-weight:700;font-size:14px;text-anchor:middle;dominant-baseline:central}
+svg .lbl{font-size:13px;text-anchor:middle;fill:var(--ink)}
+svg .tagbox{fill:var(--paper);stroke:var(--line);stroke-width:1.6}
+svg .tagbox.unk{fill:var(--accent);stroke:var(--accent)}
+svg .tagbox.unk.m1{fill:var(--m1);stroke:var(--m1)} svg .tagbox.unk.m2{fill:var(--m2);stroke:var(--m2)}
+svg .tagbox.unk.m3{fill:var(--m3);stroke:var(--m3)} svg .tagbox.unk.m4{fill:var(--m4);stroke:var(--m4)}
+svg .tagtxt{font-size:13px;font-weight:700;text-anchor:middle;dominant-baseline:central}
+svg .tagtxt.unk{fill:var(--mt)}
+.rules{border:2px solid var(--good);background:var(--goodbg);color:var(--ink);border-radius:10px;padding:10px 14px}
+.calc{border:2px solid var(--line);background:var(--paper);border-radius:10px;padding:10px 14px;max-width:300px}
+.calc h3{margin:0 0 8px;font-size:1rem}
+.cdisp{font-family:var(--mono);font-size:1.5rem;text-align:right;padding:8px 10px;border:2px solid var(--line);border-radius:8px;background:var(--bg);overflow:hidden;white-space:nowrap;min-height:2.6rem}
+.ckeys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.ckeys button{padding:10px 0;font-size:1.1rem;font-weight:600;border:2px solid var(--line);border-radius:8px;background:var(--paper);cursor:pointer}
+.ckeys button.op{background:var(--vm);border-color:var(--primary)}
+.ckeys button.eq{background:var(--accent);border-color:var(--accent);color:#1a0d00}
+.ckeys button.clr{background:var(--badbg);border-color:var(--bad)}
+.rules h3{margin:0;font-size:1rem;font-weight:700}
+.rules .rulegrid b{color:var(--ink)}
+.rulegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:8px;font-family:var(--mono);font-size:.88rem}
+.rulegrid b{font-family:var(--body);display:block;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.tri{display:flex;gap:12px;align-items:center;margin-top:8px;font-size:.9rem}
+.part{border:2px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.part.solved{border-color:var(--good);background:var(--goodbg)}
+.part .q{margin:0;font-weight:500}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.fields{display:flex;flex-direction:column;gap:10px}
+.fgroup{display:flex;flex-wrap:wrap;gap:10px}
+.fld{display:flex;align-items:center;gap:8px;border:2.5px solid var(--mc,var(--line));border-radius:12px;padding:4px 10px 4px 4px;background:var(--paper)}
+.fld .mk{background:var(--mc,var(--accent));color:var(--mt);font-family:var(--mono);font-weight:700;border-radius:8px;padding:4px 9px;font-size:.9rem}
+.fld input{width:88px;padding:6px 8px;border:2px solid var(--line);border-radius:8px;background:var(--paper);font-family:var(--mono);font-size:1rem}
+.fld.done{background:var(--goodbg);border-color:var(--good)}
+.fld.done b{font-family:var(--mono);color:var(--good)}
+.unit{font-family:var(--mono);color:var(--muted)}
+.btn{border:2px solid var(--primary);background:var(--primary);color:var(--primary-ink);border-radius:10px;padding:8px 16px;font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--primary)}
+.btn.warm{background:var(--accent);border-color:var(--accent);color:#1a0d00}
+.btn.big{padding:12px 22px;font-size:1.05rem}
+.btn:disabled{opacity:.45;cursor:default}
+.fb{border-radius:10px;padding:8px 12px;font-size:.95rem}
+.fb.good{background:var(--goodbg);color:var(--good);border:2px solid var(--good);font-weight:600}
+.fb.bad{background:var(--badbg);color:var(--bad);border:2px solid var(--bad)}
+.fb.warn{background:var(--warnbg);color:var(--warn);border:2px solid var(--hintbar);font-weight:600}
+#backup summary{cursor:pointer;font-size:.9rem;color:var(--muted)}
+.hintlist{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.hintlist li{background:var(--warnbg);color:var(--ink);border-left:6px solid var(--hintbar);padding:6px 10px;border-radius:6px;font-size:.95rem}
+.hintlist li b{font-family:var(--mono);font-size:.78rem;color:var(--warn)}
+ol.steps{margin:6px 0 0;padding-left:22px;font-family:var(--mono);font-size:.9rem}
+.meta{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.pager{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;border-top:2px dashed var(--line);padding-top:12px}
+.pager .mid{font-family:var(--mono);font-size:.85rem;color:var(--muted);text-align:center;font-size:.8rem}
+.pager .btn{white-space:nowrap}
+@media (max-width:480px){.pager{grid-template-columns:1fr 1fr}.pager .mid{grid-column:1/-1;order:-1}.pager .btn{width:100%}}
+.pager .done{color:var(--good);font-weight:700}
+.btn.next-ready{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,122,0,.55)}50%{box-shadow:0 0 0 8px rgba(255,122,0,0)}}
+.tutor{border-top:2px dashed var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.tutor[hidden]{display:none}
+.log{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow:auto}
+.msg{padding:8px 12px;border-radius:12px;max-width:92%;white-space:pre-wrap}
+.msg.me{align-self:flex-end;background:var(--primary);color:var(--primary-ink)}
+.msg.ai{align-self:flex-start;background:var(--bg);border:2px solid var(--line)}
+textarea{width:100%;min-height:64px;padding:8px 10px;border:2px solid var(--line);border-radius:10px;background:var(--paper);resize:vertical;font-family:var(--mono);font-size:.85rem}
+#ask{font-family:var(--body);font-size:1rem}
+.submit h2{color:var(--primary);text-align:center}
+.subrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+.subrow #resetBtn{justify-self:end}
+#subOut{align-items:center;text-align:center}
+@media (max-width:520px){.subrow{grid-template-columns:1fr;justify-items:center}.subrow #resetBtn{justify-self:center}.subrow span{display:none}}
+details.teacher{border:2px dashed var(--line);border-radius:12px;padding:10px 14px;background:var(--paper)}
+details.teacher summary{cursor:pointer;font-weight:600}
+table.pre{border-collapse:collapse;width:100%;font-size:.85rem;font-family:var(--mono)}
+table.pre th,table.pre td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+table.pre th{background:var(--bg)}
+.tscroll{overflow-x:auto;max-height:260px;overflow-y:auto}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="hero-top">
+      <div>
+        <h1>Circuit Coach</h1>
+        <p>Unit 1.3 Series and Parallel Circuits. Solve each part. Stuck? Ask for a hint.</p>
+      </div>
+      <div class="count" id="scoreTxt" aria-live="polite">0 / 0 solved</div>
+    </div>
+    <div class="leds" id="leds" aria-hidden="true"></div>
+  </header>
+
+  <section class="card" aria-labelledby="whoH">
+    <h2 id="whoH">Who are you?</h2>
+    <div class="who">
+      <label for="cls">Class
+        <select id="cls"><option value="">Choose class</option><option value="3.15">3.15</option><option value="3.16">3.16</option></select>
+      </label>
+      <label for="num">Student number (1 to 30)
+        <input id="num" list="numlist" inputmode="numeric" autocomplete="off" placeholder="Pick or type">
+        <datalist id="numlist"></datalist>
+      </label>
+      <label for="nick">Nickname
+        <input id="nick" maxlength="24" autocomplete="off" placeholder="Your nickname">
+      </label>
+    </div>
+  </section>
+
+  <nav id="nav" aria-label="Questions"></nav>
+
+  <main>
+    <section class="card" aria-labelledby="exTitle">
+      <div class="kicker" id="exKicker"></div>
+      <h2 id="exTitle"></h2>
+      <p class="prompt" id="exPrompt"></p>
+      <div class="paper" id="diagram"></div>
+      <div class="rules">
+        <h3>Rules to remember</h3>
+        <div class="rulegrid">
+          <div><b>Series (one line)</b>IT = I1 = I2 = I3<br>VT = V1 + V2 + V3</div>
+          <div><b>Parallel (branches)</b>IT = I1 + I2 + I3<br>VT = V1 = V2 = V3</div>
+        </div>
+        <div class="tri">
+          <svg width="74" height="64" viewBox="0 0 74 64" role="img" aria-label="Ohm's law triangle: V on top, I and R at the bottom">
+            <path d="M37 4 L70 60 L4 60 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+            <line x1="20" y1="34" x2="54" y2="34" stroke="currentColor" stroke-width="2"/>
+            <line x1="37" y1="34" x2="37" y2="60" stroke="currentColor" stroke-width="2"/>
+            <text x="37" y="28" text-anchor="middle" font-size="15" fill="currentColor" font-family="IBM Plex Mono,monospace">V</text>
+            <text x="27" y="54" text-anchor="middle" font-size="15" fill="currentColor" font-family="IBM Plex Mono,monospace">I</text>
+            <text x="47" y="54" text-anchor="middle" font-size="15" fill="currentColor" font-family="IBM Plex Mono,monospace">R</text>
+          </svg>
+          <div><b style="font-size:1.05rem">Ohm's Law</b><br>Cover the one you want.<br>V = I × R &nbsp; I = V / R &nbsp; R = V / I</div>
+        </div>
+      </div>
+      <div class="calc" id="calc" aria-label="Calculator">
+        <h3>Calculator</h3>
+        <div class="cdisp" id="cdisp" role="status" aria-live="polite">0</div>
+        <div class="ckeys" id="ckeys"></div>
+      </div>
+    </section>
+    <section class="card" aria-label="Your work">
+      <div id="parts" style="display:flex;flex-direction:column;gap:12px"></div>
+      <div class="pager">
+        <button class="btn ghost" id="prevBtn" type="button">← Previous</button>
+        <span class="mid" id="pageInfo"></span>
+        <button class="btn" id="nextBtn" type="button">Next question →</button>
+      </div>
+      <div class="tutor" id="tutor" hidden>
+        <div class="kicker">AI tutor</div>
+        <div class="log" id="log" aria-live="polite"></div>
+        <textarea id="ask" aria-label="Ask the AI tutor" placeholder="Tell the tutor what you tried or what confuses you. It will guide you, not give the answer."></textarea>
+        <div class="row"><button class="btn" id="askBtn" type="button">Ask the tutor</button><span class="meta" id="askMeta"></span></div>
+      </div>
+    </section>
+  </main>
+
+  <section class="card submit" id="submitCard" aria-labelledby="subH">
+    <h2 id="subH">Submit my results</h2>
+    <p style="margin:0;white-space:pre-line;text-align:center" id="subInfo"></p>
+    <div class="subrow"><span></span><button class="btn warm big" id="submitBtn" type="button">Submit</button><button class="btn ghost" id="resetBtn" type="button">Start over</button></div>
+    <div class="fb bad" id="subErr" role="alert" hidden></div>
+    <div id="subOut" hidden style="display:none;flex-direction:column;gap:8px">
+      <div class="fb" id="saveState" role="status" aria-live="polite"></div>
+      <details id="backup">
+        <summary>My teacher cannot see my result. Show me the backup code.</summary>
+        <p class="meta" style="margin:8px 0 6px">Copy this code and send it to your teacher.</p>
+        <textarea id="codeBox" readonly aria-label="Your submission code"></textarea>
+        <div class="row"><button class="btn" id="copyCode" type="button">Copy code</button><button class="btn ghost" id="saveCode" type="button">Save as file (.txt)</button><span class="meta" id="copyMsg"></span></div>
+      </details>
+    </div>
+  </section>
+
+  <details class="teacher" id="teacher">
+    <summary>Teacher: build the spreadsheet</summary>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+      <p style="margin:0">Paste the students' codes here (one or many, any text around them is fine), or add the saved .txt files. The latest submission of each student is used.</p>
+      <textarea id="tIn" aria-label="Pasted student codes" placeholder="CC1.xxxxxxxx.eyJ2Ijox..."></textarea>
+      <div class="row"><input type="file" id="tFiles" accept=".txt,text/plain" multiple aria-label="Add .txt files"><button class="btn" id="tBuild" type="button">Build table</button></div>
+      <div class="fb bad" id="tErr" hidden></div>
+      <div id="tOut" hidden style="display:none;flex-direction:column;gap:10px">
+        <div class="meta" id="tCount"></div>
+        <div class="tscroll"><table class="pre" id="tTable"></table></div>
+        <div class="row"><button class="btn warm" id="tXlsx" type="button">Download spreadsheet (.xlsx)</button><button class="btn ghost" id="tTsv" type="button">Copy table for Google Sheets</button><span class="meta" id="tMsg"></span></div>
+        <textarea id="tsvBox" hidden readonly aria-label="Table to copy"></textarea>
+      </div>
+    </div>
+  </details>
+</div>
+
+<script>
+/* =========================================================
+   TEACHER: paste your Apps Script web app link between the quotes.
+   It looks like  https://script.google.com/macros/s/AKfy..../exec
+   Nothing else on this page needs to change.
+   ========================================================= */
+const SAVE_URL = 'https://script.google.com/macros/s/AKfycbyP3eE2Ki4ThPLNPTDvj05V3HAVdrng1jFlfm-dDDSWGtPdtgQ1TJOqiH1aVz6l2Ksa/exec';
+
+/* ================= SVG helpers ================= */
+const HW={bulb:13,res:24,meter:14,bat:6};
+let CUR_MC={};
+const ln=(x1,y1,x2,y2,c='wire')=>`<path class="${c}" d="M${x1} ${y1} L${x2} ${y2}"/>`;
+const dot=(x,y)=>`<circle class="dot" cx="${x}" cy="${y}" r="3.6"/>`;
+const txt=(x,y,s,c='lbl')=>`<text class="${c}" x="${x}" y="${y}">${s}</text>`;
+function tag(x,y,s,unk,ci){const w=Math.max(30,s.length*8.4+14);const k=unk?' unk'+(ci?' m'+ci:''):'';
+  return `<g><rect class="tagbox${k}" x="${x-w/2}" y="${y-10}" width="${w}" height="20" rx="10"/><text class="tagtxt${unk?' unk':''}" x="${x}" y="${y}">${s}</text></g>`}
+function comp(it,x,y){
+  let o='';
+  if(it.t==='bulb'){o+=`<circle class="bulb" cx="${x}" cy="${y}" r="13"/><path class="wire" d="M${x-9} ${y-9} L${x+9} ${y+9} M${x-9} ${y+9} L${x+9} ${y-9}"/>`;if(it.label)o+=txt(x,y+30,it.label)}
+  else if(it.t==='res'){o+=`<rect class="res" x="${x-24}" y="${y-9}" width="48" height="18"/>`;if(it.label)o+=txt(x,y-16,it.label)}
+  else if(it.t==='meter'){
+    const key=typeof it.unk==='string'?it.unk:null;const ci=key?(CUR_MC[key]||0):0;const isUnk=!!it.unk;
+    const label=key?key:(isUnk?'?':it.tag);
+    o+=`<circle class="meterc ${it.k==='A'?'am':'vm'}${ci?' m'+ci:(isUnk?' mu':'')}" cx="${x}" cy="${y}" r="14"/><text class="meterletter" x="${x}" y="${y}">${it.k}</text>`;
+    if(label){const p=it.tp||'t';const w=Math.max(30,label.length*8.4+14);
+      const tx=p==='r'?x+14+8+w/2:p==='l'?x-14-8-w/2:x;const ty=p==='t'?y-28:p==='b'?y+28:y;o+=tag(tx,ty,label,isUnk,ci)}}
+  else if(it.t==='bat'){o+=`<path class="plus" d="M${x-4} ${y-16} L${x-4} ${y+16}"/><path class="minus" d="M${x+4} ${y-9} L${x+4} ${y+9}"/>`;if(it.label)o+=txt(x,y-24,it.label)}
+  return o;
+}
+function hrow(y,xa,xb,items){let o='',cur=xa;items=[...items].sort((p,q)=>p.x-q.x);
+  for(const it of items){const hw=HW[it.t];o+=ln(cur,y,it.x-hw,y);cur=it.x+hw}
+  o+=ln(cur,y,xb,y);for(const it of items)o+=comp(it,it.x,y);return o}
+function vcol(x,ya,yb,items){let o='',cur=ya;items=[...items].sort((p,q)=>p.y-q.y);
+  for(const it of items){const hw=HW[it.t];o+=ln(x,cur,x,it.y-hw);cur=it.y+hw}
+  o+=ln(x,cur,x,yb);for(const it of items)o+=comp(it,x,it.y);return o}
+/* Voltmeter wired ACROSS a part. The loop is wider than the part: it joins the wire 18 px beyond each end. */
+function across(cx,y,hw,dy,tg,unk){const my=y-dy,a=hw+18;
+  return `<path class="vwire" d="M${cx-a} ${y} L${cx-a} ${my} L${cx-14} ${my} M${cx+a} ${y} L${cx+a} ${my} L${cx+14} ${my}"/>`+dot(cx-a,y)+dot(cx+a,y)+comp({t:'meter',k:'V',tag:tg,unk,tp:'r'},cx,my)}
+function arrow(x,y,dir,s,side){
+  if(dir==='d'){const l=side==='l';return `<path class="dot" d="M${x} ${y+9} L${x-6} ${y-3} L${x+6} ${y-3} Z"/><text class="lbl" x="${l?x-12:x+12}" y="${y+4}" style="text-anchor:${l?'end':'start'}">${s}</text>`}
+  const p=dir==='r'?`M${x+9} ${y} L${x-3} ${y-6} L${x-3} ${y+6} Z`:`M${x-9} ${y} L${x+3} ${y-6} L${x+3} ${y+6} Z`;
+  return `<path class="dot" d="${p}"/><text class="lbl" x="${x}" y="${y-12}">${s}</text>`}
+function ladder(o){
+  const lastY=o.rows[o.rows.length-1].y;let s='';
+  s+=hrow(o.yTop,o.x0,o.x1,o.top||[]);
+  s+=vcol(o.x0,o.yTop,lastY,o.left||[]);
+  s+=vcol(o.x1,o.yTop,lastY,o.right||[]);
+  o.rows.forEach(r=>{s+=hrow(r.y,o.x0,o.x1,r.items||[])});
+  o.rows.forEach((r,i)=>{if(i<o.rows.length-1){s+=dot(o.x0,r.y)+dot(o.x1,r.y)}});
+  (o.extra||[]).forEach(e=>{s+=e});
+  return s;
+}
+const svg=(w,h,body,alt)=>`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${alt}">${body}</svg>`;
+
+/* ================= Exercises =================
+   Same ideas as the Unit 1.3 practice slides, with new numbers.
+   mk = meters the student must read, in colour order. A part has fields (one input per meter). */
+const EX=[
+{id:'q5',nav:'Q1',kicker:'Question 1 · parallel',title:'Find the ammeter readings',
+ prompt:'The three branch ammeters read 2 A, 1 A and 3 A. Fill in the reading of ammeters A1 and A2.',
+ alt:'Parallel circuit with a battery and three branches. Each branch has a bulb and an ammeter reading 2, 1 and 3 amps. Ammeters A1 and A2 are in the side wires.',
+ givens:[2,1,3],mk:['A1','A2'],
+ draw:()=>svg(420,290,ladder({x0:70,x1:350,yTop:44,top:[{t:'bat',x:210}],
+   left:[{t:'meter',k:'A',y:80,unk:'A1',tp:'r'}],right:[{t:'meter',k:'A',y:80,unk:'A2',tp:'l'}],
+   rows:[{y:130,items:[{t:'bulb',x:150},{t:'meter',k:'A',x:250,tag:'2 A'}]},{y:190,items:[{t:'bulb',x:150},{t:'meter',k:'A',x:250,tag:'1 A'}]},{y:250,items:[{t:'bulb',x:150},{t:'meter',k:'A',x:250,tag:'3 A'}]}]}),'Three-branch parallel circuit'),
+ parts:[{id:'a',q:'What do ammeters A1 and A2 read?',unit:'A',fields:[{k:'A1',ans:6},{k:'A2',ans:6}],
+  hints:['Look at how the bulbs are connected. Are they on one line, or on branches?','In a parallel circuit the battery current is the sum of the branch currents: IT = I1 + I2 + I3.','A1 and A2 are in the main wire, before and after the branches. Add the three branch readings.'],
+  steps:['The bulbs are on separate branches, so this is a parallel circuit.','IT = I1 + I2 + I3','IT = 2 + 1 + 3 = 6 A','A1 and A2 are both in the main wire, so both read 6 A.'],
+  wrong:[{v:[1,2,3],m:'That is the current in one branch only. A1 and A2 are in the main wire, so they measure all the branches together.'}]}]},
+{id:'q6',nav:'Q2',kicker:'Question 2 · series',title:'Find the ammeter readings',
+ prompt:'The ammeter on the left reads 2.5 A. Fill in the readings of ammeters A1 and A2.',
+ alt:'Series loop with a battery, three bulbs, one ammeter reading 2.5 amps and two unknown ammeters A1 and A2.',
+ givens:[2.5],mk:['A1','A2'],
+ draw:()=>{const x0=80,x1=340,yt=50,yb=230;let s='';
+   s+=hrow(yt,x0,x1,[{t:'bat',x:210}]);
+   s+=vcol(x0,yt,yb,[{t:'meter',k:'A',y:140,tag:'2.5 A',tp:'r'}]);
+   s+=vcol(x1,yt,yb,[{t:'bulb',y:100},{t:'meter',k:'A',y:150,unk:'A1',tp:'l'}]);
+   s+=hrow(yb,x0,x1,[{t:'bulb',x:120},{t:'meter',k:'A',x:210,unk:'A2',tp:'t'},{t:'bulb',x:300}]);
+   return svg(420,290,s,'Series loop circuit')},
+ parts:[{id:'a',q:'What do ammeters A1 and A2 read?',unit:'A',fields:[{k:'A1',ans:2.5},{k:'A2',ans:2.5}],
+  hints:['Count the paths. Is there one path for the current, or many?','In a series circuit the current is the same at every point: IT = I1 = I2 = I3.','One ammeter already reads 2.5 A. Does the current get used up by a bulb, or is it the same all around the loop?'],
+  steps:['There is only one path, so this is a series circuit.','In series: IT = I1 = I2 = I3','The current is the same at every point, so A1 and A2 both read 2.5 A.'],
+  wrong:[{v:[1.25,0.83],m:'In series the current is not shared between bulbs. There is one path, so every point has the same current.'},{v:7.5,m:'You added the currents. In series we add voltages, but the current stays the same.'}]}]},
+{id:'q7',nav:'Q3',kicker:'Question 3 · parallel',title:'Find the voltmeter readings',
+ prompt:'The voltmeter across the top bulb reads 4.5 V. Fill in the readings of voltmeters V1 (across the battery) and V2 (across the bottom bulb).',
+ alt:'Parallel circuit with a battery and two branches with one bulb each. The voltmeter across the top bulb reads 4.5 volts. V1 is across the battery and V2 is across the bottom bulb.',
+ givens:[4.5],mk:['V1','V2'],
+ draw:()=>{const o={x0:70,x1:350,yTop:72,top:[{t:'bat',x:210}],rows:[{y:150,items:[{t:'bulb',x:210}]},{y:240,items:[{t:'bulb',x:210}]}],
+     extra:[across(210,72,6,34,'','V1'),across(210,150,13,38,'4.5 V'),across(210,240,13,38,'','V2')]};
+   return svg(420,290,ladder(o),'Two-branch parallel circuit with voltmeters')},
+ parts:[{id:'a',q:'What do voltmeters V1 and V2 read?',unit:'V',fields:[{k:'V1',ans:4.5},{k:'V2',ans:4.5}],
+  hints:['How are the two bulbs connected: in series or in parallel?','In a parallel circuit the voltage is the same in every branch: VT = V1 = V2.','The battery and the bottom bulb are connected across the same two points as the top bulb.'],
+  steps:['The bulbs are on branches, so this is a parallel circuit.','VT = V1 = V2','The top bulb has 4.5 V, so the battery and the bottom bulb also have 4.5 V.'],
+  wrong:[{v:9,m:'9 V is 4.5 + 4.5. Adding voltages is the series rule. These bulbs are on branches.'},{v:2.25,m:'Voltage is not divided between branches. Every branch gets the full voltage.'}]}]},
+{id:'q8',nav:'Q4',kicker:'Question 4 · series',title:'Find the meter readings',
+ prompt:'Both light bulbs are identical (same resistance). The battery is 9 V and the ammeter on the left reads 3 A. Fill in V1, V2, A1 and A2.',
+ alt:'Series loop with a 9 volt battery, a 3 amp ammeter, two identical bulbs with voltmeters V1 and V2, and ammeters A1 and A2.',
+ givens:[9,3],mk:['V1','V2','A1','A2'],
+ draw:()=>{const x0=70,x1=350,yt=76,yb=226;let s='';
+   s+=hrow(yt,x0,x1,[{t:'bat',x:210}]);
+   s+=vcol(x0,yt,yb,[{t:'meter',k:'A',y:150,tag:'3 A',tp:'r'}]);
+   s+=vcol(x1,yt,yb,[{t:'meter',k:'A',y:150,unk:'A2',tp:'l'}]);
+   s+=hrow(yb,x0,x1,[{t:'bulb',x:140},{t:'meter',k:'A',x:210,unk:'A1',tp:'b'},{t:'bulb',x:280}]);
+   s+=across(210,yt,6,32,'9 V');s+=across(140,yb,13,40,'','V1');s+=across(280,yb,13,40,'','V2');
+   return svg(420,290,s,'Series loop with two bulbs and meters')},
+ parts:[{id:'a',q:'What do voltmeters V1 and V2 read?',unit:'V',fields:[{k:'V1',ans:4.5},{k:'V2',ans:4.5}],
+  hints:['The two bulbs are identical. That is an important clue. Are they in series or in parallel?','In series the battery voltage is shared: VT = V1 + V2. Identical bulbs share it equally.','VT = 9 V. Split 9 V equally between two identical bulbs.'],
+  steps:['The bulbs are in one line, so this is a series circuit.','VT = V1 + V2, so 9 = V1 + V2','The bulbs are identical, so V1 = V2 = 4.5 V.'],
+  wrong:[{v:9,m:'9 V is the whole battery. In series the two bulbs share the voltage, so each gets only part.'},{v:18,m:'Voltages do not add up to more than the battery voltage. The battery voltage is the total.'}]},
+ {id:'b',q:'What do ammeters A1 and A2 read?',unit:'A',fields:[{k:'A1',ans:3},{k:'A2',ans:3}],
+  hints:['Is this a series or a parallel circuit?','In series the current is the same everywhere: IT = I1 = I2.','One ammeter already reads 3 A.'],
+  steps:['This is a series circuit.','IT = I1 = I2','Every ammeter reads 3 A.'],
+  wrong:[{v:1.5,m:'In series the current is not shared. Every point has the same current.'},{v:6,m:'Do not add the currents. In series the current stays the same.'}]}]},
+{id:'e1',nav:'Q5',kicker:'Question 5 · parallel',title:'Three identical bulbs',
+ prompt:'All the bulbs are identical. The ammeter reads 0.5 A and the battery is 6 V.',
+ alt:'Parallel circuit with a 6 volt battery and three identical bulbs on three branches. An ammeter on the middle branch reads 0.5 amps.',
+ givens:[6,0.5],mk:[],
+ draw:()=>svg(420,290,ladder({x0:70,x1:350,yTop:44,top:[{t:'bat',x:210,label:'VT = 6 V'}],
+   rows:[{y:110,items:[{t:'bulb',x:170,label:'Bulb 1'}]},{y:170,items:[{t:'bulb',x:170,label:'Bulb 2'},{t:'meter',k:'A',x:270,tag:'0.5 A'}]},{y:230,items:[{t:'bulb',x:170,label:'Bulb 3'}]}],
+   extra:[arrow(70,80,'d','IT = ?')]}),'Three identical bulbs in parallel'),
+ parts:[{id:'a',q:'What is the total current IT?',unit:'A',ans:1.5,
+  hints:['The bulbs are identical. That is an important clue: identical bulbs carry the same current. How many branches are there?','For a parallel circuit: IT = I1 + I2 + I3.','Each branch carries 0.5 A. Add the three branch currents.'],
+  steps:['Identical bulbs: I1 = I2 = I3 = 0.5 A','Parallel: IT = I1 + I2 + I3','IT = 0.5 + 0.5 + 0.5 = 1.5 A'],
+  wrong:[{v:0.5,m:'0.5 A is one bulb. IT is the total from the battery, which feeds all three branches.'},{v:0.17,m:'Do not divide. The branch currents add up to the total.'}]},
+ {id:'b',q:'What is the resistance of bulb 3?',unit:'Ω',ans:12,
+  hints:['The bulbs are identical, so bulb 3 carries the same current as bulb 2, the one with the ammeter. What is I3? Then which rule links V, I and R?','Ohm\'s law: R = V / I. Cover R in the triangle.','In parallel, V3 = VT = 6 V. I3 = 0.5 A. Put the numbers into R = V / I.'],
+  steps:['I3 = 0.5 A','V3 = VT = 6 V (parallel)','R3 = V3 / I3 = 6 / 0.5 = 12 Ω'],
+  wrong:[{v:0.08,m:'You calculated I ÷ V. Cover R in the triangle: R = V / I.'},{v:3,m:'You multiplied V × I. Resistance is V divided by I.'}]}]},
+{id:'e2',nav:'Q6',kicker:'Question 6 · parallel',title:'Find the missing currents',
+ prompt:'Top circuit: the main ammeter reads 15 A and two branches read 7 A and 3 A. Bottom circuit: the main ammeter reads 13 A and two branches read 4 A and 6 A. Find X and Y.',
+ alt:'Two parallel circuits with three resistors each. Top: main ammeter 15 amps, branches X, 7 amps and 3 amps. Bottom: main ammeter 13 amps, branches 4 amps, 6 amps and Y.',
+ givens:[15,7,3,13,4,6],mk:['X','Y'],
+ draw:()=>svg(420,580,ladder({x0:70,x1:350,yTop:44,top:[{t:'bat',x:210}],left:[{t:'meter',k:'A',y:84,tag:'15 A',tp:'r'}],
+   rows:[{y:130,items:[{t:'res',x:150},{t:'meter',k:'A',x:260,unk:'X'}]},{y:190,items:[{t:'res',x:150},{t:'meter',k:'A',x:260,tag:'7 A'}]},{y:250,items:[{t:'res',x:150},{t:'meter',k:'A',x:260,tag:'3 A'}]}]})+'<g transform="translate(0,290)">'+ladder({x0:70,x1:350,yTop:44,top:[{t:'bat',x:210}],left:[{t:'meter',k:'A',y:84,tag:'13 A',tp:'r'}],
+   rows:[{y:130,items:[{t:'res',x:150},{t:'meter',k:'A',x:260,tag:'4 A'}]},{y:190,items:[{t:'res',x:150},{t:'meter',k:'A',x:260,tag:'6 A'}]},{y:250,items:[{t:'res',x:150},{t:'meter',k:'A',x:260,unk:'Y'}]}]})+'</g>','Two three-branch circuits, find X and Y'),
+ parts:[{id:'a',q:'Top circuit: what is the missing current X?',unit:'A',fields:[{k:'X',ans:5}],
+  hints:['What does the main ammeter measure compared with the branch ammeters?','IT = I1 + I2 + I3. Write the numbers you know and call the missing one X.','15 = 7 + 3 + X. Get X on its own.'],
+  steps:['Parallel: IT = I1 + I2 + I3','15 = 7 + 3 + X','X = 15 − 7 − 3 = 5 A'],
+  wrong:[{v:25,m:'You added the main ammeter too. IT is the total, and the branches add up to IT.'},{v:10,m:'10 A is 7 + 3, the other two branches. Subtract them from the total.'},{v:[8,12],m:'You subtracted only one branch. There are two known branches to subtract.'}]},
+  {id:'b',q:'Bottom circuit: what is the missing current Y?',unit:'A',fields:[{k:'Y',ans:3}],
+  hints:['Are the resistors in series or in parallel? What does that say about the currents?','IT = I1 + I2 + I3.','13 = 4 + 6 + Y. Get Y on its own.'],
+  steps:['Parallel: IT = I1 + I2 + I3','13 = 4 + 6 + Y','Y = 13 − 4 − 6 = 3 A'],
+  wrong:[{v:23,m:'You added all three numbers. The 13 A is the total, so the branches add up to 13 A.'},{v:10,m:'10 A is 4 + 6, the two known branches. Subtract them from the total.'},{v:[9,7],m:'You subtracted only one branch. There are two known branches to subtract.'}]}]},
+{id:'e3',nav:'Q7',kicker:'Question 7 · mixed',title:'Bulbs X and Y with a resistor',
+ prompt:'A 9 V battery. The total current is 0.9 A and the current through bulb Y is 0.3 A. R = 12 Ω.',
+ alt:'9 volt battery. Bulb X is on one branch. The second branch has a 12 ohm resistor R in series with bulb Y. Total current 0.9 amps, current in bulb Y 0.3 amps.',
+ givens:[9,0.9,0.3,12],mk:[],
+ draw:()=>{const x0=60,x1=350;let s=ladder({x0,x1,yTop:48,top:[{t:'bat',x:205,label:'9 V'}],
+   rows:[{y:120,items:[{t:'bulb',x:205,label:'X'}]},{y:200,items:[{t:'res',x:130,label:'R = 12 Ω'},{t:'bulb',x:240,label:'Y'}]}],
+   extra:[arrow(x1,80,'d','0.9 A','l'),arrow(300,200,'l','0.3 A')]});
+   return svg(420,290,s,'Bulb X in parallel with a branch containing R and bulb Y')},
+ parts:[
+ {id:'a',q:'What current flows through bulb X?',unit:'A',ans:0.6,
+  hints:['Bulb X and the branch with R and Y are on separate branches. Which reading is the total?','IT = Ix + Iy (parallel).','IT = 0.9 A and Iy = 0.3 A. Find Ix.'],
+  steps:['IT = Ix + Iy','0.9 = Ix + 0.3','Ix = 0.9 − 0.3 = 0.6 A'],
+  wrong:[{v:1.2,m:'You added. 0.9 A is the total, so a branch is the total minus the other branch.'},{v:0.9,m:'0.9 A is the total current, not the current in bulb X.'},{v:0.3,m:'0.3 A is the current in bulb Y.'}]},
+ {id:'b',q:'What is the potential difference (voltage) across bulb X?',unit:'V',ans:9,
+  hints:['Bulb X is on its own branch next to the battery. Series or parallel with the battery?','In parallel: VT = Vx.','Look at the battery voltage. Does bulb X get all of it or only part?'],
+  steps:['Bulb X is in a branch connected straight across the battery.','Parallel: VT = Vx = 9 V'],
+  wrong:[{v:0.6,m:'0.6 is the current of bulb X. The question asks for voltage.'}]},
+ {id:'c',q:'What is the potential difference across the resistor R?',unit:'V',ans:3.6,
+  hints:['R is in the same branch as bulb Y. What current flows through R?','Ohm\'s law: V = I × R. In series the current is the same, so IR = Iy.','IR = 0.3 A and R = 12 Ω. Multiply.'],
+  steps:['R is in series with Y, so IR = 0.3 A','VR = IR × R','VR = 0.3 × 12 = 3.6 V'],
+  wrong:[{v:10.8,m:'You used 0.9 A, the total. R is only in the branch with Y, so its current is 0.3 A.'},{v:7.2,m:'You used 0.6 A. That is the current in the branch with bulb X.'},{v:40,m:'You divided 12 ÷ 0.3. Voltage is I × R.'}]},
+ {id:'d',q:'What is the potential difference across bulb Y?',unit:'V',ans:5.4,
+  hints:['R and bulb Y are in series. Together they are connected across the 9 V battery.','In series: the branch voltage = VR + Vy.','9 = 3.6 + Vy. Use your answer from part c.'],
+  steps:['R and Y are in series: VT = VR + Vy','9 = 3.6 + Vy','Vy = 9 − 3.6 = 5.4 V'],
+  wrong:[{v:9,m:'9 V is across the whole branch. R takes some of it, so bulb Y gets less.'},{v:3.6,m:'3.6 V is the voltage across R, not across bulb Y.'}]},
+ {id:'e',q:'What is the total resistance of the circuit?',unit:'Ω',ans:10,
+  hints:['Use the whole circuit: the battery voltage and the battery current.','Ohm\'s law for the whole circuit: RT = VT / IT.','VT = 9 V. IT is the total current from the battery.'],
+  steps:['RT = VT / IT','RT = 9 / 0.9 = 10 Ω'],
+  wrong:[{v:30,m:'9 ÷ 0.3 uses the current of one branch. Total resistance uses the total current.'},{v:15,m:'9 ÷ 0.6 uses the current of bulb X only. Use the total current.'},{v:12,m:'12 Ω is the resistor R only, not the whole circuit.'}]}]},
+{id:'e4',nav:'Q8',kicker:'Question 8 · mixed',title:'5 Ω in series with 12 Ω and 4 Ω in parallel',
+ prompt:'A 32 V battery. The current from the battery is 4 A.',
+ alt:'32 volt battery. A 5 ohm resistor is in series with a parallel pair: a 12 ohm resistor carrying I1 and a 4 ohm resistor carrying I2. The battery current is 4 amps.',
+ givens:[32,4,5,12],mk:[],
+ draw:()=>{let s='';
+   s+=hrow(50,90,370,[{t:'bat',x:200,label:'32 V'}]);
+   s+=vcol(90,50,210,[]);s+=vcol(370,50,210,[]);s+=vcol(250,130,210,[]);
+   s+=hrow(130,90,250,[{t:'res',x:170,label:'12 Ω'}]);
+   s+=hrow(210,90,370,[{t:'res',x:170,label:'4 Ω'},{t:'res',x:310,label:'5 Ω'}]);
+   s+=dot(90,130)+dot(250,210);
+   s+=arrow(90,84,'d','4 A')+txt(130,150,'I1')+txt(130,230,'I2');
+   return svg(420,270,s,'Series and parallel mixed circuit')},
+ parts:[
+ {id:'a',q:'What is the current through the 5 Ω resistor?',unit:'A',ans:4,
+  hints:['Is the 5 Ω resistor in the main wire, or on a branch?','It is in series with the battery. In series the current is the same.','Look at the current leaving the battery.'],
+  steps:['The 5 Ω resistor is in series with the battery.','Series: the current is the same as the battery current.','I = 4 A'],
+  wrong:[{v:[1,3],m:'That is the current in one branch. The 5 Ω resistor is in the main wire.'}]},
+ {id:'b',q:'What is the total resistance of the circuit?',unit:'Ω',ans:8,
+  hints:['You know the total voltage and the total current. Which rule uses both?','Ohm\'s law: RT = VT / IT.','VT = 32 V and IT = 4 A.'],
+  steps:['RT = VT / IT','RT = 32 / 4 = 8 Ω'],
+  wrong:[{v:21,m:'5 + 12 + 4 treats all three as a series line. The 12 Ω and 4 Ω are in parallel.'},{v:128,m:'32 × 4 is not Ohm\'s law for resistance. Use R = V / I.'}]},
+ {id:'c',q:'What is the voltage across the 5 Ω resistor?',unit:'V',ans:20,
+  hints:['You know the current through it and its resistance.','Ohm\'s law: V = I × R.','I = 4 A and R = 5 Ω.'],
+  steps:['V = I × R','V = 4 × 5 = 20 V'],
+  wrong:[{v:32,m:'32 V is the whole battery. The 5 Ω resistor gets only part of it.'},{v:1.25,m:'You divided 5 ÷ 4. Voltage is I × R.'}]},
+ {id:'d',q:'What is the current I1 through the 12 Ω resistor?',unit:'A',ans:1,
+  hints:['The 12 Ω and 4 Ω resistors are in parallel, so they have the same voltage. How much voltage is left for them after the 5 Ω resistor?','Series: VT = V5 + Vparallel. Then I = V / R for the 12 Ω resistor.','Vparallel = 32 − 20 = 12 V. Now use I1 = V / R with R = 12 Ω.'],
+  steps:['V5 = 20 V, so the parallel pair gets 32 − 20 = 12 V','The same 12 V is across the 12 Ω resistor','I1 = V / R = 12 / 12 = 1 A'],
+  wrong:[{v:2.67,m:'You used 32 ÷ 12. Only 12 V is across the parallel pair, not the full 32 V.'},{v:3,m:'That is the current in the 4 Ω branch (12 ÷ 4). The question asks for the 12 Ω branch.'},{v:4,m:'4 A is the total current. I1 is only part of it.'}]}]},
+{id:'e5',nav:'Q9',kicker:'Question 9 · series',title:'Find the resistance of the light bulb',
+ prompt:'A 36 V battery. The ammeter reads 2 A. The resistor is 8 Ω.',
+ alt:'Series loop with a 36 volt battery, a 2 amp ammeter, an 8 ohm resistor with voltmeter V1 and a bulb with voltmeter V2.',
+ givens:[36,2,8],mk:[],
+ draw:()=>{const x0=70,x1=350,yt=76,yb=226;let s='';
+   s+=hrow(yt,x0,x1,[{t:'bat',x:210}]);
+   s+=vcol(x0,yt,yb,[{t:'meter',k:'A',y:150,tag:'2 A',tp:'r'}]);s+=vcol(x1,yt,yb,[]);
+   s+=hrow(yb,x0,x1,[{t:'res',x:140,label:'8 Ω'},{t:'bulb',x:280}]);
+   s+=across(210,yt,6,32,'36 V');s+=across(140,yb,24,40,'V1');s+=across(280,yb,13,40,'V2');
+   return svg(420,290,s,'Series loop with a resistor and a bulb')},
+ parts:[{id:'a',q:'What is the resistance of the light bulb?',unit:'Ω',ans:10,
+  hints:['Is this series or parallel? What does that tell you about the current in the bulb?','To find R you need the voltage and the current of the bulb: R = V / I. Find them one at a time.','Current: 2 A (series). Voltage: VT = V1 + V2. First find V1 = I × R1 for the 8 Ω resistor, then V2 = 36 − V1.'],
+  steps:['Series: I = 2 A everywhere','V1 = I × R1 = 2 × 8 = 16 V','VT = V1 + V2, so 36 = 16 + V2 and V2 = 20 V','R2 = V2 / I = 20 / 2 = 10 Ω'],
+  wrong:[{v:18,m:'36 ÷ 2 uses the whole battery voltage. The 8 Ω resistor takes some, so the bulb gets only part.'},{v:20,m:'20 V is the voltage across the bulb. Divide it by the current to get resistance.'},{v:8,m:'8 Ω is the resistor, not the bulb.'},{v:16,m:'16 V is the voltage across the resistor, not the resistance of the bulb.'}]}]},
+{id:'e6',nav:'Q10',kicker:'Question 10 · mixed',title:'Find the current through L4',
+ prompt:'The ammeter on R1 reads 0.5 A. R1 = 24 Ω, R2 = 12 Ω and bulb L3 = 6 Ω. Bulb L4 is in series with the three branches.',
+ alt:'Battery with bulb L4 in the main wire, then three parallel branches: R1 24 ohm with an ammeter reading 0.5 amps, R2 12 ohm, and bulb L3 6 ohm.',
+ givens:[0.5,24,12,6],mk:[],
+ draw:()=>svg(420,300,ladder({x0:70,x1:360,yTop:44,top:[{t:'bat',x:190}],right:[{t:'bulb',y:92,label:'L4'}],
+   rows:[{y:150,items:[{t:'meter',k:'A',x:130,tag:'0.5 A'},{t:'res',x:250,label:'R1 24 Ω'}]},{y:205,items:[{t:'res',x:250,label:'R2 12 Ω'}]},{y:260,items:[{t:'bulb',x:250,label:'L3 6 Ω'}]}]}),'Bulb L4 in series with a three-branch parallel block'),
+ parts:[{id:'a',q:'What current flows through L4?',unit:'A',ans:3.5,
+  hints:['L4 is in series with the three branches. Does it carry one branch current, or the total?','Find each branch current with I = V / R. In parallel the voltage is the same in every branch. Then IT = I1 + I2 + I3.','R1 = 24 Ω carries 0.5 A, so V = 12 V. Use 12 V for R2 (12 Ω) and L3 (6 Ω).'],
+  steps:['V1 = I1 × R1 = 0.5 × 24 = 12 V, so V1 = V2 = V3 = 12 V','I2 = 12 / 12 = 1 A','I3 = 12 / 6 = 2 A','I4 = I1 + I2 + I3 = 0.5 + 1 + 2 = 3.5 A'],
+  wrong:[{v:0.5,m:'0.5 A is only R1. L4 carries the current of all three branches together.'},{v:[1.5,2.5,3],m:'You are missing a branch. Add all three branch currents.'},{v:12,m:'12 V is a voltage. The question asks for current in amps.'}]}]},
+{id:'e7',nav:'Q11',kicker:'Question 11 · parallel',title:'Find the resistance of R2',
+ prompt:'A 24 V battery. The total current is 6 A. R1 = 12 Ω and R3 = 8 Ω.',
+ alt:'Parallel circuit with a 24 volt battery, a 6 amp main ammeter and three resistors: R1 12 ohm, R2 unknown and R3 8 ohm.',
+ givens:[24,6,12,8],mk:[],
+ draw:()=>svg(420,290,ladder({x0:70,x1:350,yTop:70,top:[{t:'bat',x:210}],left:[{t:'meter',k:'A',y:112,tag:'6 A',tp:'r'}],
+   rows:[{y:150,items:[{t:'res',x:230,label:'R1 12 Ω'}]},{y:200,items:[{t:'res',x:230,label:'R2 ?'}]},{y:250,items:[{t:'res',x:230,label:'R3 8 Ω'}]}],extra:[across(210,70,6,32,'24 V')]}),'Three resistors in parallel'),
+ parts:[{id:'a',q:'What is the resistance of R2?',unit:'Ω',ans:24,
+  hints:['If you knew the current in R2 you could use R = V / I. How can the 6 A total help you find it?','Find I1 and I3 with I = V / R (V = 24 V in every branch). Then IT = I1 + I2 + I3 gives I2.','I1 = 24 ÷ 12 and I3 = 24 ÷ 8. Then I2 = 6 − I1 − I3. Finally R2 = 24 ÷ I2.'],
+  steps:['I1 = V / R1 = 24 / 12 = 2 A','I3 = V / R3 = 24 / 8 = 3 A','IT = I1 + I2 + I3, so 6 = 2 + I2 + 3 and I2 = 1 A','R2 = V / I2 = 24 / 1 = 24 Ω'],
+  wrong:[{v:4,m:'24 ÷ 6 = 4 Ω is the total resistance, not R2.'},{v:1,m:'1 is the current in R2. The question asks for resistance in Ω.'}]}]},
+{id:'e8',nav:'Q12',kicker:'Question 12 · parallel',title:'Find the meter readings',
+ prompt:'A 12 V battery. The main ammeter on the left reads 5 A. The bottom branch ammeter reads 2 A. Fill in V1, V2, A1 and A2.',
+ alt:'Parallel circuit with a 12 volt battery and two branches, each with a bulb and a voltmeter (V1 top, V2 bottom). The top branch has ammeter A1, the bottom branch ammeter reads 2 amps, and the right side wire has ammeter A2.',
+ givens:[12,5,2],mk:['V1','V2','A1','A2'],
+ draw:()=>svg(420,300,ladder({x0:70,x1:350,yTop:70,top:[{t:'bat',x:210}],left:[{t:'meter',k:'A',y:110,tag:'5 A',tp:'r'}],right:[{t:'meter',k:'A',y:110,unk:'A2',tp:'l'}],
+   rows:[{y:160,items:[{t:'bulb',x:150},{t:'meter',k:'A',x:270,unk:'A1'}]},{y:245,items:[{t:'bulb',x:150},{t:'meter',k:'A',x:270,tag:'2 A'}]}],
+   extra:[across(210,70,6,32,'12 V'),across(150,160,13,40,'','V1'),across(150,245,13,40,'','V2')]}),'Two-branch parallel circuit with meters'),
+ parts:[
+ {id:'a',q:'What do voltmeters V1 and V2 read?',unit:'V',fields:[{k:'V1',ans:12},{k:'V2',ans:12}],
+  hints:['Are the bulbs in series or in parallel?','In parallel: VT = V1 = V2.','What is the battery voltage?'],
+  steps:['The bulbs are on branches, so this is a parallel circuit.','VT = V1 = V2','Each voltmeter reads 12 V.'],
+  wrong:[{v:24,m:'Voltages are not added in a parallel circuit. Each branch has the full battery voltage.'},{v:6,m:'Voltage is not split between branches. Splitting happens in series circuits.'}]},
+ {id:'b',q:'What does ammeter A1 (top branch) read?',unit:'A',fields:[{k:'A1',ans:3}],
+  hints:['The total is 5 A and the bottom branch is 2 A. How are branch currents related to the total?','IT = I1 + I2 (parallel).','5 = I1 + 2. Find I1.'],
+  steps:['IT = I1 + I2','5 = I1 + 2','I1 = 5 − 2 = 3 A'],
+  wrong:[{v:7,m:'You added 5 + 2. The 5 A is the total, so the branches add up to 5 A.'},{v:5,m:'5 A is the total current. The top branch carries only part of it.'}]},
+ {id:'c',q:'What does ammeter A2 (right wire) read?',unit:'A',fields:[{k:'A2',ans:5}],
+  hints:['Is this ammeter before or after the branches join?','After the branches join, all the current is in one wire again.','Compare it with the 5 A ammeter on the left wire, or add the two branch currents.'],
+  steps:['The two branch currents join again on the right wire.','IT = I1 + I2 = 3 + 2 = 5 A'],
+  wrong:[{v:[3,2],m:'That is one branch. This ammeter is after the branches join, so it measures them together.'},{v:7,m:'The current does not grow. The right wire carries the same total as the left wire.'}]}]}
+];
+/* normalise: every part gets a fields list */
+EX.forEach(e=>e.parts.forEach(p=>{if(!p.fields)p.fields=[{k:'',ans:p.ans}]}));
+
+/* ================= State ================= */
+const KEY='circuit-coach-v3';
+const CLASSES=['3.15','3.16'];
+let S={cls:'',num:'',nick:'',cur:'q5',p:{}};
+try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&o.p)S=Object.assign(S,o)}}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const P=(eid,pid)=>(S.p[eid+'.'+pid]=S.p[eid+'.'+pid]||{att:0,hints:0,steps:false,solved:false,ok:{},tried:[],fb:null});
+const exById=id=>EX.find(e=>e.id===id);
+const chat={};let sample=null,downloads=null,busy=false;
+
+/* ================= Answer checking ================= */
+function parseNum(s){s=String(s).trim().replace(/,/g,'.').replace(/ohms?|amps?|volts?|[ΩωAaVv]/gi,'').replace(/\s+/g,'');
+  const m=s.match(/^(-?\d*\.?\d+)\/(-?\d*\.?\d+)$/);if(m)return +m[2]===0?NaN:+m[1]/+m[2];
+  return /^-?\d*\.?\d+$/.test(s)?+s:NaN}
+const tolOf=f=>Math.max(0.005,Math.abs(f.ans)*0.002);
+const near=(v,x)=>Math.abs(v-x)<=Math.max(0.006,Math.abs(x)*0.01);
+function judge(p,f,v){
+  if(Math.abs(v-f.ans)<=tolOf(f))return {ok:true};
+  const hit=(p.wrong||[]).find(w=>[].concat(w.v).some(x=>near(v,x)));
+  if(hit)return {ok:false,m:hit.m};
+  if(f.ans%1!==0&&Math.abs(v-f.ans)<=Math.abs(f.ans)*0.06)return {ok:false,m:'Very close. Check your rounding.'};
+  return {ok:false,m:'Not yet. Check the formula and the units. Try a hint if you are stuck.'};
+}
+
+/* ================= Rendering ================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function totals(){let t=0,d=0;EX.forEach(e=>e.parts.forEach(p=>{t++;if(P(e.id,p.id).solved)d++}));return {t,d}}
+function renderNav(){
+  $('nav').innerHTML=EX.map(e=>{const d=e.parts.filter(p=>P(e.id,p.id).solved).length;const all=d===e.parts.length;
+    return `<button class="chip${all?' done':''}" type="button" data-ex="${e.id}" aria-current="${e.id===S.cur}"><span>${esc(e.nav)}</span><small>${d}/${e.parts.length}</small></button>`}).join('');
+  const {t,d}=totals();$('scoreTxt').textContent=d+' / '+t+' solved';
+  $('leds').innerHTML=EX.map(e=>e.parts.map(p=>`<i class="${P(e.id,p.id).solved?'on':''}${e.id===S.cur?' cur':''}"></i>`).join('')).join('');
+  $('subInfo').textContent=`You have solved ${d} of ${t} parts.`+'\n'+'Press Submit to send your result to your teacher.';
+}
+function renderEx(){
+  const ex=exById(S.cur);CUR_MC={};(ex.mk||[]).forEach((k,i)=>CUR_MC[k]=i+1);
+  $('exKicker').textContent=ex.kicker;$('exTitle').textContent=ex.title;$('exPrompt').textContent=ex.prompt;
+  $('diagram').innerHTML=ex.draw();
+  renderParts();renderLog();renderPager();
+}
+function mcStyle(ex,k){const i=(ex.mk||[]).indexOf(k);return i>=0?`style="--mc:var(--m${i+1})"`:''}
+function partHTML(ex,p){
+  const st=P(ex.id,p.id);
+  const multi=p.fields.length>1||p.fields[0].k;
+  const hints=p.hints.slice(0,st.hints).map((h,i)=>`<li><b>HINT ${i+1}</b> ${esc(h)}</li>`).join('');
+  const canSteps=!st.solved&&!st.steps&&(st.hints>=3||st.att>=3);
+  const steps=(st.steps||st.solved)?`<details${st.steps&&!st.solved?' open':''}><summary class="meta">${st.solved?'See the method':'Worked steps'}</summary><ol class="steps">${p.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol></details>`:'';
+  const fields=p.fields.map(f=>{
+    const id=`in-${ex.id}-${p.id}-${f.k||'x'}`;const done=st.ok[f.k||'x'];
+    const mk=f.k?`<span class="mk">${esc(f.k)}</span>`:'';
+    if(done)return `<div class="fld done" ${mcStyle(ex,f.k)}>${mk}<b>${+(+f.ans).toFixed(2)}</b><span class="unit">${esc(p.unit)} ✓</span></div>`;
+    return `<label class="fld" for="${id}" ${mcStyle(ex,f.k)}>${mk}<input id="${id}" data-f="${esc(f.k||'x')}" inputmode="decimal" autocomplete="off" aria-label="${esc(f.k?f.k+' reading':'Your answer')} in ${esc(p.unit)}"><span class="unit">${esc(p.unit)}</span></label>`}).join('');
+  let fb='';
+  if(st.solved)fb=`<div class="fb good" role="status">Correct! ${st.att===0&&st.hints===0?'First try!':''}</div>`;
+  else if(st.fb)fb=`<div class="fb bad" role="status">${st.fb.map(esc).join('<br>')}</div>`;
+  const form=st.solved?`<div class="fgroup">${fields}</div>`:`<form class="fields" data-form="${p.id}" novalidate><div class="fgroup">${fields}</div><div class="row"><button class="btn" type="submit">Check</button><button class="btn ghost" type="button" data-hint="${p.id}"${st.hints>=3?' disabled':''}>${st.hints?'Next hint ('+st.hints+'/3)':'Hint'}</button>${canSteps?`<button class="btn ghost" type="button" data-steps="${p.id}">Show the steps</button>`:''}</div></form>`;
+  return `<div class="part${st.solved?' solved':''}"><p class="q"><b>${esc(ex.parts.length>1?p.id+')':'')}</b> ${esc(p.q)}</p>${form}${fb}${hints?`<ul class="hintlist">${hints}</ul>`:''}${steps}<div class="meta">wrong tries ${st.att} · hints ${st.hints}</div></div>`;
+}
+function renderParts(focusId){
+  const ex=exById(S.cur);$('parts').innerHTML=ex.parts.map(p=>partHTML(ex,p)).join('');
+  if(focusId){const el=document.getElementById(focusId);if(el)el.focus()}
+  $('tutor').hidden=!sample;
+}
+function renderPager(){
+  const i=EX.findIndex(e=>e.id===S.cur);const ex=EX[i];const all=ex.parts.every(p=>P(ex.id,p.id).solved);const last=i===EX.length-1;
+  $('prevBtn').disabled=i===0;
+  $('nextBtn').textContent=last?'Go to Submit ↓':'Next question →';
+  $('nextBtn').className='btn'+(all?' warm next-ready':' ');
+  $('pageInfo').innerHTML=all?`<span class="done">✓ Question ${i+1} of ${EX.length}</span>`:`Question ${i+1} of ${EX.length}`;
+}
+function renderLog(){
+  const ex=exById(S.cur);const m=chat[ex.id]||[];
+  $('log').innerHTML=m.length?m.map(x=>`<div class="msg ${x.role==='user'?'me':'ai'}">${esc(x.content)}</div>`).join(''):'<div class="meta">Stuck? Tell the tutor what you tried.</div>';
+  $('log').scrollTop=$('log').scrollHeight;
+}
+function goTo(id){S.cur=id;save();renderNav();renderEx();
+  const r=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  $('nav').scrollIntoView({behavior:r?'auto':'smooth',block:'start'})}
+
+/* ================= Events ================= */
+$('nav').addEventListener('click',e=>{const b=e.target.closest('[data-ex]');if(b)goTo(b.dataset.ex)});
+$('prevBtn').addEventListener('click',()=>{const i=EX.findIndex(e=>e.id===S.cur);if(i>0)goTo(EX[i-1].id)});
+$('nextBtn').addEventListener('click',()=>{const i=EX.findIndex(e=>e.id===S.cur);if(i<EX.length-1)goTo(EX[i+1].id);else $('submitCard').scrollIntoView({behavior:'smooth',block:'start'})});
+$('parts').addEventListener('submit',e=>{
+  e.preventDefault();const pid=e.target.dataset.form;const ex=exById(S.cur);const p=ex.parts.find(x=>x.id===pid);const st=P(ex.id,pid);
+  const inputs=[...e.target.querySelectorAll('input[data-f]')];const typed={};inputs.forEach(i=>typed[i.dataset.f]=i.value);
+  const filled=inputs.filter(i=>i.value.trim()!=='');
+  if(!filled.length){st.fb=['Type your answer first.'];save();renderParts();return}
+  const msgs=[];let anyWrong=false;
+  for(const i of filled){
+    const f=p.fields.find(q=>(q.k||'x')===i.dataset.f);const v=parseNum(i.value);
+    if(Number.isNaN(v)){msgs.push((f.k?f.k+': ':'')+'Type a number, for example 2.5 or 2/3.');continue}
+    const r=judge(p,f,v);
+    if(r.ok){st.ok[f.k||'x']=true}
+    else{anyWrong=true;st.tried.push((f.k?f.k+'=':'')+i.value.trim());const m=(f.k&&p.fields.length>1?f.k+': ':'')+r.m;if(!msgs.includes(m))msgs.push(m)}
+  }
+  if(anyWrong)st.att++;
+  const done=p.fields.every(f=>st.ok[f.k||'x']);
+  if(done){st.solved=true;st.fb=null}
+  else{const okKeys=p.fields.filter(f=>st.ok[f.k||'x']).map(f=>f.k).filter(Boolean);
+    st.fb=(okKeys.length&&p.fields.length>1?[okKeys.join(' and ')+(okKeys.length>1?' are':' is')+' correct.']:[]).concat(msgs.length?msgs:['Fill in the other readings too.'])}
+  save();renderNav();renderPager();
+  const next=ex.parts.find(q=>!P(ex.id,q.id).solved);
+  renderParts();
+  if(!done){inputs.forEach(i=>{const el=document.querySelector(`#parts input[data-f="${i.dataset.f}"][id^="in-${ex.id}-${pid}-"]`);if(el)el.value=typed[i.dataset.f]});
+    const first=document.querySelector(`#parts [data-form="${pid}"] input`);if(first)first.focus()}
+  else if(next){const el=document.querySelector(`#in-${ex.id}-${next.id}-${next.fields[0].k||'x'}`);if(el)el.focus()}
+});
+$('parts').addEventListener('click',e=>{
+  const ex=exById(S.cur);
+  const h=e.target.closest('[data-hint]');
+  if(h){const p=ex.parts.find(x=>x.id===h.dataset.hint);const st=P(ex.id,p.id);const typed={};document.querySelectorAll('#parts input[data-f]').forEach(i=>typed[i.id]=i.value);
+    if(st.hints<3)st.hints++;save();renderParts();Object.keys(typed).forEach(id=>{const el=document.getElementById(id);if(el)el.value=typed[id]});return}
+  const s=e.target.closest('[data-steps]');
+  if(s){const p=ex.parts.find(x=>x.id===s.dataset.steps);P(ex.id,p.id).steps=true;save();renderParts()}
+});
+
+/* ================= Student details ================= */
+const nl=$('numlist');for(let i=1;i<=30;i++){const o=document.createElement('option');o.value=String(i);nl.appendChild(o)}
+function numOk(v){return /^\d{1,2}$/.test(String(v).trim())&&+v>=1&&+v<=30}
+function paintWho(){$('cls').classList.toggle('ok',CLASSES.includes(S.cls));$('num').classList.toggle('ok',numOk(S.num));$('nick').classList.toggle('ok',!!S.nick.trim())}
+$('cls').value=S.cls;$('num').value=S.num;$('nick').value=S.nick;paintWho();
+$('cls').addEventListener('change',e=>{S.cls=e.target.value;save();paintWho()});
+$('num').addEventListener('input',e=>{S.num=e.target.value.trim();save();paintWho()});
+$('nick').addEventListener('input',e=>{S.nick=e.target.value;save();paintWho()});
+
+
+/* ================= Calculator ================= */
+(function(){
+  let cur='0',acc=null,op=null,fresh=true;
+  const disp=$('cdisp');
+  const fmt=n=>{if(!isFinite(n))return 'Error';let t=String(+n.toPrecision(10));return t};
+  const show=()=>{disp.textContent=(acc!==null&&op&&fresh?fmt(acc)+' '+op:cur)};
+  const run=()=>{if(acc===null||!op)return;const b=parseFloat(cur);let r=op==='+'?acc+b:op==='−'?acc-b:op==='×'?acc*b:b===0?NaN:acc/b;cur=fmt(r);acc=null;op=null};
+  const keys=['7','8','9','÷','4','5','6','×','1','2','3','−','0','.','=','+','C','⌫'];
+  $('ckeys').innerHTML=keys.map(k=>`<button type="button" data-k="${k}" class="${'÷×−+'.includes(k)?'op':k==='='?'eq':k==='C'||k==='⌫'?'clr':''}" aria-label="${({'÷':'divide','×':'times','−':'minus','+':'plus','=':'equals','C':'clear','⌫':'delete'})[k]||k}">${k}</button>`).join('');
+  $('ckeys').addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;
+    if(cur==='Error'&&k!=='C')cur='0';
+    if(/^[0-9]$/.test(k)){cur=(fresh||cur==='0')?k:cur+k;fresh=false}
+    else if(k==='.'){if(fresh){cur='0.';fresh=false}else if(!cur.includes('.'))cur+='.'}
+    else if(k==='C'){cur='0';acc=null;op=null;fresh=true}
+    else if(k==='⌫'){cur=cur.length>1&&!fresh?cur.slice(0,-1):'0'}
+    else if(k==='='){run();fresh=true}
+    else{if(op&&!fresh)run();acc=parseFloat(cur);op=k;fresh=true}
+    if(cur.length>14)cur=cur.slice(0,14);
+    show();
+  });
+})();
+
+/* ================= Submission code ================= */
+function hash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return h.toString(16).padStart(8,'0')}
+function toB64(str){const b=new TextEncoder().encode(str);let bin='';b.forEach(x=>bin+=String.fromCharCode(x));return btoa(bin)}
+function fromB64(b64){const bin=atob(b64);const b=Uint8Array.from(bin,c=>c.charCodeAt(0));return new TextDecoder().decode(b)}
+function buildCode(){
+  const parts={};EX.forEach(e=>e.parts.forEach(p=>{const s=P(e.id,p.id);parts[e.id+'.'+p.id]=[s.solved?1:0,s.att,s.hints,s.steps?1:0]}));
+  const payload={v:1,c:S.cls,n:+S.num,k:S.nick.trim(),t:new Date().toISOString(),p:parts};
+  const b=toB64(JSON.stringify(payload));return 'CC1.'+hash(b)+'.'+b;
+}
+function decodeCode(code){
+  const m=code.match(/^CC1\.([0-9a-f]{8})\.([A-Za-z0-9+/=]+)$/);if(!m)return {err:'not a Circuit Coach code'};
+  if(hash(m[2])!==m[1])return {err:'the code is damaged (copy it again)'};
+  let o;try{o=JSON.parse(fromB64(m[2]))}catch(e){return {err:'the code cannot be read'}}
+  if(!o||o.v!==1||!CLASSES.includes(o.c)||!numOk(o.n)||typeof o.p!=='object')return {err:'the student details are not valid'};
+  return {ok:o};
+}
+function showErr(el,msg){el.textContent=msg;el.hidden=false}
+function sumUp(){let solved=0,wrong=0,hints=0,steps=0,total=0;
+  EX.forEach(e=>e.parts.forEach(p=>{const t=P(e.id,p.id);total++;if(t.solved)solved++;wrong+=t.att;hints+=t.hints;if(t.steps)steps++}));
+  return {solved,wrong,hints,steps,total}}
+function setState(cls,msg){const el=$('saveState');el.className='fb '+cls;el.innerHTML=msg}
+let sending=false;
+async function sendResult(){
+  const code=$('codeBox').value;const s=sumUp();
+  const body=JSON.stringify({v:1,c:S.cls,n:+S.num,k:S.nick.trim(),t:new Date().toISOString(),
+    solved:s.solved,total:s.total,wrong:s.wrong,hints:s.hints,steps:s.steps,code});
+  // text/plain keeps the browser from asking Google for permission first (no CORS preflight)
+  const r=await fetch(SAVE_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body,redirect:'follow'});
+  if(!r.ok)throw new Error('http '+r.status);
+  let d=null;try{d=JSON.parse(await r.text())}catch(e){throw new Error('bad reply')}
+  if(!d||!d.ok){const err=new Error((d&&d.error)||'refused');err.refused=true;throw err}
+  return d;
+}
+async function doSubmit(){
+  if(sending)return;
+  $('subErr').hidden=true;
+  const miss=[];if(!CLASSES.includes(S.cls))miss.push('class');if(!numOk(S.num))miss.push('student number (1 to 30)');if(!S.nick.trim())miss.push('nickname');
+  if(miss.length){showErr($('subErr'),'Please fill in your '+miss.join(', ')+' at the top of the page.');$('whoH').scrollIntoView({behavior:'smooth',block:'center'});return}
+  const s=sumUp();
+  $('codeBox').value=buildCode();$('copyMsg').textContent='';
+  $('subOut').style.display='flex';$('subOut').hidden=false;$('backup').open=false;
+  if(!SAVE_URL){setState('warn','This page is not connected yet. Open the backup code below and send it to your teacher.');$('backup').open=true;return}
+  sending=true;$('submitBtn').disabled=true;$('submitBtn').textContent='Saving...';
+  setState('','Saving your result...');
+  try{
+    await sendResult();
+    setState('good','Saved. Your teacher has your result: '+s.solved+' of '+s.total+' parts solved. You can keep working and press Submit again.');
+  }catch(err){
+    if(err&&err.refused){
+      // the server answered and said no: the details are wrong, so sending again will not help
+      setState('bad','Your result was not accepted ('+esc(String(err.message))+'). Check your class, number and nickname at the top of the page, then press Submit again.');
+      $('backup').open=true;
+      sending=false;$('submitBtn').disabled=false;$('submitBtn').textContent='Submit';
+      return;
+    }
+    // the data may still have arrived; try once more without reading the answer
+    let blind=false;
+    try{await fetch(SAVE_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({v:1,c:S.cls,n:+S.num,k:S.nick.trim(),t:new Date().toISOString(),
+        solved:s.solved,total:s.total,wrong:s.wrong,hints:s.hints,steps:s.steps,code:$('codeBox').value})});blind=true}catch(e2){}
+    setState('warn',blind
+      ? 'Sent, but we could not get an answer back. Tell your teacher. If they cannot see your result, open the backup code below.'
+      : 'Could not save your result (no internet?). Press Submit again, or open the backup code below and send it to your teacher.');
+    $('backup').open=true;
+  }
+  sending=false;$('submitBtn').disabled=false;$('submitBtn').textContent='Submit';
+}
+$('submitBtn').addEventListener('click',doSubmit);
+$('copyCode').addEventListener('click',async()=>{
+  const box=$('codeBox');
+  try{await navigator.clipboard.writeText(box.value);$('copyMsg').textContent='Copied. Now send it to your teacher.'}
+  catch(e){box.focus();box.select();$('copyMsg').textContent='Press Ctrl+C (or hold and copy) to copy the code.'}
+});
+async function saveFile(filename,data,mime){
+  if(downloads){await downloads.save({filename,data});return}
+  const blob=new Blob([data],{type:mime||'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),10000);
+}
+$('saveCode').addEventListener('click',async()=>{
+  try{await saveFile(`circuit-coach-${S.cls}-no${S.num}.txt`,$('codeBox').value);$('copyMsg').textContent='File saved. Send it to your teacher.'}
+  catch(e){$('copyMsg').textContent=e&&e.code==='declined'?'Save cancelled.':'Could not save a file. Use Copy code instead.'}
+});
+$('resetBtn').addEventListener('click',()=>{
+  const b=$('resetBtn');
+  if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Tap again to erase my work';setTimeout(()=>{b.dataset.sure='';b.textContent='Start over'},3000);return}
+  S={cls:S.cls,num:S.num,nick:S.nick,cur:EX[0].id,p:{}};Object.keys(chat).forEach(k=>delete chat[k]);save();b.dataset.sure='';b.textContent='Start over';
+  $('subOut').style.display='none';$('subOut').hidden=true;renderNav();renderEx();
+});
+
+/* ================= Teacher: codes -> spreadsheet ================= */
+let TROWS=null;
+const exLabel=(eid,pid)=>{const e=exById(eid);return {ex:e.nav,part:e.parts.length>1?pid:'',q:e.parts.find(p=>p.id===pid).q}};
+function collectCodes(text){return (text.match(/CC1\.[0-9a-f]{8}\.[A-Za-z0-9+/=]+/g)||[])}
+function buildTables(codes){
+  const errs=[];const latest=new Map();
+  codes.forEach((c,i)=>{const r=decodeCode(c);if(r.err){errs.push(`Code ${i+1}: ${r.err}.`);return}
+    const o=r.ok;const key=o.c+'|'+o.n;const prev=latest.get(key);if(!prev||o.t>=prev.t)latest.set(key,o)});
+  const subs=[...latest.values()].sort((a,b)=>a.c.localeCompare(b.c)||a.n-b.n);
+  const allKeys=[];EX.forEach(e=>e.parts.forEach(p=>allKeys.push([e.id,p.id])));
+  const summary=[['Class','Number','Nickname','Submitted','Parts solved','Parts total','Percent solved','Wrong tries','Hints used','Steps viewed']];
+  const details=[['Class','Number','Nickname','Question','Part','Solved','Wrong tries','Hints used','Saw steps']];
+  const stat={};allKeys.forEach(([e,p])=>stat[e+'.'+p]={n:0,s:0,t:0,h:0,st:0});
+  subs.forEach(o=>{let s=0,t=0,h=0,st=0;
+    allKeys.forEach(([e,p])=>{const k=e+'.'+p;const v=o.p[k]||[0,0,0,0];const L=exLabel(e,p);
+      s+=v[0];t+=v[1];h+=v[2];st+=v[3];
+      details.push([o.c,o.n,o.k,L.ex,L.part,v[0]?'Yes':'No',v[1],v[2],v[3]?'Yes':'No']);
+      const a=stat[k];a.n++;a.s+=v[0];a.t+=v[1];a.h+=v[2];a.st+=v[3]});
+    const when=new Date(o.t);summary.push([o.c,o.n,o.k,isNaN(when)?o.t:when.toLocaleString('en-GB'),s,allKeys.length,Math.round(s/allKeys.length*100)+'%',t,h,st])});
+  const byq=[['Question','Part','Item','Students','% solved','Avg wrong tries','Avg hints','% saw steps']];
+  allKeys.forEach(([e,p])=>{const a=stat[e+'.'+p];const L=exLabel(e,p);const n=a.n||1;
+    byq.push([L.ex,L.part,L.q,a.n,a.n?Math.round(a.s/n*100)+'%':'',a.n?+(a.t/n).toFixed(2):'',a.n?+(a.h/n).toFixed(2):'',a.n?Math.round(a.st/n*100)+'%':''])});
+  return {summary,details,byq,errs,count:subs.length};
+}
+function renderTeacher(t){
+  $('tErr').hidden=!t.errs.length;if(t.errs.length)$('tErr').textContent=t.errs.join(' ');
+  if(!t.count){$('tOut').style.display='none';$('tOut').hidden=true;if(!t.errs.length)showErr($('tErr'),'No Circuit Coach codes found. Paste the codes that start with CC1.');return}
+  $('tOut').hidden=false;$('tOut').style.display='flex';
+  $('tCount').textContent=`${t.count} student${t.count===1?'':'s'} found.`;
+  $('tTable').innerHTML=t.summary.map((r,i)=>`<tr>${r.map(c=>i?`<td>${esc(c)}</td>`:`<th>${esc(c)}</th>`).join('')}</tr>`).join('');
+}
+async function readFiles(files){let out='';for(const f of files){try{out+='\n'+await f.text()}catch(e){}}return out}
+$('tBuild').addEventListener('click',async()=>{
+  $('tErr').hidden=true;$('tMsg').textContent='';
+  let text=$('tIn').value;const files=$('tFiles').files;if(files&&files.length)text+=await readFiles(files);
+  TROWS=buildTables(collectCodes(text));renderTeacher(TROWS);
+});
+let xlsxP=null;
+function loadXLSX(){if(window.XLSX)return Promise.resolve(window.XLSX);
+  if(!xlsxP)xlsxP=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=()=>window.XLSX?res(window.XLSX):rej(new Error('xlsx'));s.onerror=()=>{xlsxP=null;rej(new Error('xlsx'))};document.head.appendChild(s)});
+  return xlsxP}
+function tsv(rows){return rows.map(r=>r.map(c=>String(c).replace(/[\t\r\n]+/g,' ')).join('\t')).join('\n')}
+$('tXlsx').addEventListener('click',async()=>{
+  if(!TROWS||!TROWS.count)return;$('tMsg').textContent='Building file...';
+  try{
+    const X=await loadXLSX();const wb=X.utils.book_new();
+    const add=(name,rows,widths)=>{const ws=X.utils.aoa_to_sheet(rows);ws['!cols']=widths.map(w=>({wch:w}));X.utils.book_append_sheet(wb,ws,name)};
+    add('Summary',TROWS.summary,[8,8,16,20,12,11,14,12,11,13]);
+    add('Details',TROWS.details,[8,8,16,10,6,8,12,11,10]);
+    add('By question',TROWS.byq,[10,6,60,10,10,15,10,12]);
+    const buf=X.write(wb,{bookType:'xlsx',type:'array'});
+    await saveFile('circuit-coach-results.xlsx',buf,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    $('tMsg').textContent='Spreadsheet saved.';
+  }catch(e){$('tMsg').textContent=e&&e.code==='declined'?'Save cancelled.':'Could not make the .xlsx file. Use "Copy table for Google Sheets" instead.'}
+});
+$('tTsv').addEventListener('click',async()=>{
+  if(!TROWS||!TROWS.count)return;const text='SUMMARY\n'+tsv(TROWS.summary)+'\n\nDETAILS\n'+tsv(TROWS.details)+'\n\nBY QUESTION\n'+tsv(TROWS.byq);
+  const box=$('tsvBox');box.value=text;
+  try{await navigator.clipboard.writeText(text);box.hidden=true;$('tMsg').textContent='Copied. Paste into Google Sheets or Excel.'}
+  catch(e){box.hidden=false;box.focus();box.select();$('tMsg').textContent='Copy the text in the box, then paste into a sheet.'}
+});
+
+/* ================= AI tutor (page asks Claude; hidden if unavailable) ================= */
+function numsIn(t){return (String(t).replace(/,/g,'').match(/\d+(?:\.\d+)?/g)||[]).map(Number)}
+function leaks(ex,reply){
+  const ns=numsIn(reply);
+  return ex.parts.some(p=>!P(ex.id,p.id).solved&&p.fields.some(f=>!ex.givens.some(g=>Math.abs(g-f.ans)<1e-9)&&ns.some(n=>Math.abs(n-f.ans)<0.006)));
+}
+function tutorPrompt(ex){
+  const parts=ex.parts.map(p=>{const st=P(ex.id,p.id);return `Part ${p.id}: ${p.q} (unit ${p.unit})\n  PRIVATE answer key: ${p.fields.map(f=>(f.k?f.k+' = ':'')+(+(+f.ans).toFixed(3))).join(', ')} ${p.unit}\n  PRIVATE method: ${p.steps.join(' | ')}\n  Student status: ${st.solved?'solved':'not solved yet'}; wrong answers tried: ${st.tried.join(', ')||'none'}`}).join('\n');
+  return `You are Circuit Coach, a kind and patient tutor for students aged 12 to 15 in a science class where English is a second language. Unit: series and parallel circuits (Ohm's law).
+Use very simple English and short sentences. If the student writes in another language, answer in that language, but keep the formulas the same.
+Use the class notation: series IT = I1 = I2, VT = V1 + V2; parallel IT = I1 + I2, VT = V1 = V2; V = I × R.
+RULES: Never say the final answer to any part that is not solved yet. Never do the last calculation for the student. Do not write the full solution. Give ONE small hint or ONE guiding question per reply, at most 3 short sentences. If the student's idea is wrong, name the idea kindly and ask a question that helps them see it. If their idea is right, say so briefly and ask them to do the next step themselves. If they ask for the answer, say you cannot give it but offer the next small step. Stay on this exercise. Plain text only, no markdown.
+EXERCISE: ${ex.title}. ${ex.prompt}
+DIAGRAM: ${ex.alt}
+${parts}`;
+}
+async function askTutor(){
+  if(!sample||busy)return;const q=$('ask').value.trim();if(!q)return;
+  const ex=exById(S.cur);const log=(chat[ex.id]=chat[ex.id]||[]);
+  log.push({role:'user',content:q});$('ask').value='';renderLog();busy=true;$('askBtn').disabled=true;$('askMeta').textContent='Thinking...';
+  const msgs=log.map((m,i)=>({role:m.role,content:i===0?tutorPrompt(ex)+'\n\nSTUDENT: '+m.content:m.content}));
+  try{
+    const r=await sample(msgs,{modelTier:'quick',cache:false});
+    let t=(r&&r.text||'').trim();if(!t)throw {code:'empty'};
+    if(leaks(ex,t)){
+      const open=ex.parts.find(p=>!P(ex.id,p.id).solved);const st=open&&P(ex.id,open.id);
+      if(open&&st.hints<3){st.hints++;save();renderParts()}
+      t='Let me give you a hint instead. '+(open?open.hints[Math.min(st.hints,3)-1]||open.hints[0]:'Try the next step yourself.');
+    }
+    log.push({role:'assistant',content:t});$('askMeta').textContent='';
+  }catch(err){
+    log.pop();$('ask').value=q;
+    $('askMeta').textContent=err&&err.code==='rate_limited'?'Too many questions. Wait a moment.':err&&err.code==='not_granted'?'The tutor is not available.':'The tutor could not answer. Use the hint buttons.';
+  }
+  busy=false;$('askBtn').disabled=false;renderLog();
+}
+$('askBtn').addEventListener('click',askTutor);
+$('ask').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();askTutor()}});
+
+/* ================= Start ================= */
+if(!exById(S.cur))S.cur=EX[0].id;
+renderNav();renderEx();
+try{
+  if(window.claude&&window.claude.use){
+    window.claude.use('sample').then(s=>{if(s){sample=s;$('tutor').hidden=false}}).catch(()=>{});
+    window.claude.use('downloads').then(d=>{if(d)downloads=d}).catch(()=>{});
+  }
+}catch(e){}
+</script>
+</body>
+</html>

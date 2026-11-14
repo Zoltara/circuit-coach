@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Circuit Coach - Teacher results</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e6f3ff; --paper:#ffffff; --ink:#0f2238; --muted:#4a6178; --primary:#1f5fff; --primary-ink:#fff; --accent:#ff7a00;
+  --line:#c3d6ea; --good:#079a55; --goodbg:#d9f7e7; --bad:#d92d1b; --badbg:#ffe3de; --warn:#8a5200; --warnbg:#fff0bf;
+  --body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#0a1626;--paper:#122338;--ink:#e8f2ff;--muted:#9fb6cf;--line:#28405c;--goodbg:#07351f;--badbg:#3a1410;--warnbg:#3a2a05;--good:#4ee29a;--bad:#ff8c7a;--warn:#ffd77a;color-scheme:dark}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px;display:flex;flex-direction:column;gap:16px}
+header{background:var(--primary);color:var(--primary-ink);border-radius:14px;padding:16px 20px}
+header h1{margin:0;font-size:1.45rem}
+header p{margin:4px 0 0;opacity:.9;font-size:.95rem}
+.card{background:var(--paper);border:2px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.card h2{margin:0;font-size:1.12rem}
+label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:600;color:var(--muted)}
+input,textarea,select{font:inherit;padding:9px 11px;border:2px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);width:100%}
+textarea{min-height:90px;font-family:var(--mono);font-size:.8rem}
+.grid{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+@media (max-width:720px){.grid{grid-template-columns:1fr}}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{font:inherit;font-weight:600;cursor:pointer;border:2px solid var(--primary);background:var(--primary);color:var(--primary-ink);border-radius:10px;padding:9px 16px}
+.btn.ghost{background:transparent;color:var(--primary)}
+.btn.warm{background:var(--accent);border-color:var(--accent);color:#2a1400}
+.btn:disabled{opacity:.55;cursor:default}
+.meta{font-size:.85rem;color:var(--muted)}
+.fb{border-radius:10px;padding:8px 12px;font-size:.93rem}
+.fb.good{background:var(--goodbg);color:var(--good);border:2px solid var(--good);font-weight:600}
+.fb.bad{background:var(--badbg);color:var(--bad);border:2px solid var(--bad)}
+.fb.warn{background:var(--warnbg);color:var(--warn);border:2px solid var(--warn)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{font:inherit;font-weight:600;cursor:pointer;border:2px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:6px 14px}
+.tabs button[aria-selected=true]{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+.tscroll{overflow:auto;max-height:62vh;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th,td{border-bottom:1px solid var(--line);padding:6px 10px;text-align:left;white-space:nowrap}
+td.q{white-space:normal;min-width:260px}
+thead th{position:sticky;top:0;background:var(--bg);cursor:pointer;user-select:none;z-index:1}
+thead th .ar{opacity:.45;font-size:.75rem}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--line) 22%,transparent)}
+.num{font-family:var(--mono)}
+.lo{color:var(--bad);font-weight:600}
+.hi{color:var(--good);font-weight:600}
+.pill{display:inline-block;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:1px 9px;font-size:.78rem;font-family:var(--mono)}
+details summary{cursor:pointer;font-weight:600}
+.cards{display:flex;gap:10px;flex-wrap:wrap}
+.kpi{flex:1 1 130px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.kpi b{display:block;font-size:1.5rem;font-family:var(--mono);line-height:1.2}
+.kpi span{font-size:.78rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Circuit Coach - results</h1>
+    <p>Unit 1.3 Series and Parallel Circuits. Only you see this page. Do not share the link or the key with students.</p>
+  </header>
+
+  <section class="card">
+    <h2>1. Connect</h2>
+    <div class="grid">
+      <label for="url">Apps Script web app link (ends with /exec)
+        <input id="url" placeholder="https://script.google.com/macros/s/..../exec" autocomplete="off" spellcheck="false">
+      </label>
+      <label for="key">Secret key
+        <input id="key" type="password" placeholder="your secret key" autocomplete="off">
+      </label>
+    </div>
+    <div class="row">
+      <button class="btn" id="load" type="button">Load results</button>
+      <label style="flex-direction:row;align-items:center;gap:6px;font-weight:400"><input type="checkbox" id="remember" style="width:auto" checked> Remember on this computer</label>
+      <span class="meta" id="loadMsg"></span>
+    </div>
+    <div class="fb bad" id="err" hidden></div>
+    <details>
+      <summary>No internet? Use the students' backup codes instead</summary>
+      <p class="meta" style="margin:8px 0 6px">Paste the codes the students sent you (any text around them is fine), then press Read codes.</p>
+      <textarea id="paste" placeholder="CC1.xxxxxxxx.eyJ2Ijox..."></textarea>
+      <div class="row" style="margin-top:8px"><input type="file" id="files" accept=".txt,text/plain" multiple style="width:auto"><button class="btn ghost" id="readPaste" type="button">Read codes</button></div>
+    </details>
+  </section>
+
+  <section class="card" id="out" hidden>
+    <h2>2. Results</h2>
+    <div class="cards" id="kpis"></div>
+    <div class="row" style="justify-content:space-between">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-tab="students" aria-selected="true">Students</button>
+        <button type="button" role="tab" data-tab="byq" aria-selected="false">By question</button>
+        <button type="button" role="tab" data-tab="details" aria-selected="false">Every part</button>
+      </div>
+      <div class="row">
+        <label style="flex-direction:row;align-items:center;gap:6px;font-weight:400"><span class="meta">Class</span>
+          <select id="clsFilter" style="width:auto"><option value="">all</option><option value="3.15">3.15</option><option value="3.16">3.16</option></select>
+        </label>
+        <button class="btn warm" id="xlsx" type="button">Download .xlsx</button>
+        <button class="btn ghost" id="copy" type="button">Copy for Google Sheets</button>
+        <span class="meta" id="dlMsg"></span>
+      </div>
+    </div>
+    <div class="fb warn" id="warn" hidden></div>
+    <div class="tscroll"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+    <p class="meta" id="foot" style="margin:0"></p>
+    <textarea id="tsvBox" hidden readonly aria-label="Table to copy"></textarea>
+  </section>
+</div>
+
+<script>
+/* ---------- the 12 questions and their 24 parts (same order as the student page) ---------- */
+const QMETA=[{"id":"q5","nav":"Q1","parts":[{"id":"a","q":"What do ammeters A1 and A2 read?"}]},{"id":"q6","nav":"Q2","parts":[{"id":"a","q":"What do ammeters A1 and A2 read?"}]},{"id":"q7","nav":"Q3","parts":[{"id":"a","q":"What do voltmeters V1 and V2 read?"}]},{"id":"q8","nav":"Q4","parts":[{"id":"a","q":"What do voltmeters V1 and V2 read?"},{"id":"b","q":"What do ammeters A1 and A2 read?"}]},{"id":"e1","nav":"Q5","parts":[{"id":"a","q":"What is the total current IT?"},{"id":"b","q":"What is the resistance of bulb 3?"}]},{"id":"e2","nav":"Q6","parts":[{"id":"a","q":"Top circuit: what is the missing current X?"},{"id":"b","q":"Bottom circuit: what is the missing current Y?"}]},{"id":"e3","nav":"Q7","parts":[{"id":"a","q":"What current flows through bulb X?"},{"id":"b","q":"What is the potential difference (voltage) across bulb X?"},{"id":"c","q":"What is the potential difference across the resistor R?"},{"id":"d","q":"What is the potential difference across bulb Y?"},{"id":"e","q":"What is the total resistance of the circuit?"}]},{"id":"e4","nav":"Q8","parts":[{"id":"a","q":"What is the current through the 5 Ω resistor?"},{"id":"b","q":"What is the total resistance of the circuit?"},{"id":"c","q":"What is the voltage across the 5 Ω resistor?"},{"id":"d","q":"What is the current I1 through the 12 Ω resistor?"}]},{"id":"e5","nav":"Q9","parts":[{"id":"a","q":"What is the resistance of the light bulb?"}]},{"id":"e6","nav":"Q10","parts":[{"id":"a","q":"What current flows through L4?"}]},{"id":"e7","nav":"Q11","parts":[{"id":"a","q":"What is the resistance of R2?"}]},{"id":"e8","nav":"Q12","parts":[{"id":"a","q":"What do voltmeters V1 and V2 read?"},{"id":"b","q":"What does ammeter A1 (top branch) read?"},{"id":"c","q":"What does ammeter A2 (right wire) read?"}]}];
+const CLASSES=['3.15','3.16'];
+const KEYS=[];QMETA.forEach(e=>e.parts.forEach(p=>KEYS.push([e.id,p.id])));
+const LABEL={};QMETA.forEach(e=>e.parts.forEach(p=>LABEL[e.id+'.'+p.id]={ex:e.nav,part:e.parts.length>1?p.id:'',q:p.q}));
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const STORE='circuit-coach-teacher';
+
+/* ---------- reading a student code (same format as the student page) ---------- */
+function hash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return h.toString(16).padStart(8,'0')}
+function fromB64(b64){const bin=atob(b64);const b=Uint8Array.from(bin,c=>c.charCodeAt(0));return new TextDecoder().decode(b)}
+function numOk(v){return /^\d{1,2}$/.test(String(v).trim())&&+v>=1&&+v<=30}
+function decodeCode(code){
+  const m=String(code).match(/^CC1\.([0-9a-f]{8})\.([A-Za-z0-9+/=]+)$/);if(!m)return {err:'not a Circuit Coach code'};
+  if(hash(m[2])!==m[1])return {err:'the code is damaged'};
+  let o;try{o=JSON.parse(fromB64(m[2]))}catch(e){return {err:'the code cannot be read'}}
+  if(!o||o.v!==1||!CLASSES.includes(o.c)||!numOk(o.n)||typeof o.p!=='object')return {err:'the student details are not valid'};
+  return {ok:o};
+}
+function collectCodes(text){return (String(text).match(/CC1\.[0-9a-f]{8}\.[A-Za-z0-9+/=]+/g)||[])}
+
+/* ---------- build the tables ---------- */
+let DATA=null,TAB='students',SORT={students:{i:0,dir:1},byq:{i:0,dir:1},details:{i:0,dir:1}};
+
+function build(subs){
+  // keep only the newest submission of each student (class + number)
+  const latest=new Map();
+  subs.forEach(o=>{const k=o.c+'|'+o.n;const prev=latest.get(k);if(!prev||String(o.t)>=String(prev.t))latest.set(k,o)});
+  const list=[...latest.values()].sort((a,b)=>a.c.localeCompare(b.c)||a.n-b.n);
+
+  const stat={};KEYS.forEach(([e,p])=>stat[e+'.'+p]={n:0,s:0,t:0,h:0,st:0});
+  const students=[],details=[];
+  list.forEach(o=>{
+    let s=0,t=0,h=0,st=0;
+    KEYS.forEach(([e,p])=>{const k=e+'.'+p;const v=o.p[k]||[0,0,0,0];const L=LABEL[k];
+      s+=v[0];t+=v[1];h+=v[2];st+=v[3];
+      details.push({cls:o.c,num:o.n,nick:o.k,ex:L.ex,part:L.part,q:L.q,solved:v[0],wrong:v[1],hints:v[2],steps:v[3]});
+      const a=stat[k];a.n++;a.s+=v[0];a.t+=v[1];a.h+=v[2];a.st+=v[3]});
+    const when=new Date(o.t);
+    students.push({cls:o.c,num:o.n,nick:o.k,when:isNaN(when)?String(o.t):when.toLocaleString('en-GB'),
+      wh:isNaN(when)?0:when.getTime(),solved:s,total:KEYS.length,pct:Math.round(s/KEYS.length*100),wrong:t,hints:h,steps:st});
+  });
+  const byq=KEYS.map(([e,p])=>{const a=stat[e+'.'+p];const L=LABEL[e+'.'+p];const n=a.n||1;
+    return {ex:L.ex,part:L.part,q:L.q,n:a.n,pct:a.n?Math.round(a.s/n*100):'',wrong:a.n?+(a.t/n).toFixed(2):'',
+      hints:a.n?+(a.h/n).toFixed(2):'',steps:a.n?Math.round(a.st/n*100):''}});
+  return {students,byq,details};
+}
+
+const COLS={
+  students:[['Class','cls','t'],['No.','num','n'],['Nickname','nick','t'],['Submitted','when','n','wh'],
+            ['Solved','solved','n'],['of','total','n'],['% solved','pct','n','pct','%'],
+            ['Wrong tries','wrong','n'],['Hints','hints','n'],['Saw steps','steps','n']],
+  byq:[['Question','ex','t'],['Part','part','t'],['Item','q','q'],['Students','n','n'],
+       ['% solved','pct','n','pct','%'],['Avg wrong tries','wrong','n'],['Avg hints','hints','n'],['% saw steps','steps','n','steps','%']],
+  details:[['Class','cls','t'],['No.','num','n'],['Nickname','nick','t'],['Question','ex','t'],['Part','part','t'],
+           ['Item','q','q'],['Solved','solved','b'],['Wrong tries','wrong','n'],['Hints','hints','n'],['Saw steps','steps','b']]
+};
+
+function rowsFor(tab){
+  const f=$('clsFilter').value;
+  let rows=DATA[tab];
+  if(f&&tab!=='byq')rows=rows.filter(r=>r.cls===f);
+  if(f&&tab==='byq')rows=build(DATA.raw.filter(o=>o.c===f)).byq;
+  const s=SORT[tab];const col=COLS[tab][s.i];const field=col[3]||col[1];
+  rows=rows.slice().sort((a,b)=>{
+    const x=a[field],y=b[field];
+    if(typeof x==='number'&&typeof y==='number')return (x-y)*s.dir;
+    return String(x).localeCompare(String(y),undefined,{numeric:true})*s.dir});
+  return rows;
+}
+
+function render(){
+  if(!DATA)return;
+  const rows=rowsFor(TAB),cols=COLS[TAB],s=SORT[TAB];
+  $('tbl').tHead.innerHTML='<tr>'+cols.map((c,i)=>
+    `<th data-i="${i}">${esc(c[0])} <span class="ar">${i===s.i?(s.dir>0?'▲':'▼'):''}</span></th>`).join('')+'</tr>';
+  $('tbl').tBodies[0].innerHTML=rows.map(r=>'<tr>'+cols.map(c=>{
+    const v=r[c[1]];const suf=c[4]||'';
+    if(c[2]==='q')return `<td class="q">${esc(v)}</td>`;
+    if(c[2]==='b')return `<td>${v?'Yes':'<span class="lo">No</span>'}</td>`;
+    if(c[2]==='n'){
+      let cls='num';
+      if((c[1]==='pct')&&v!=='')cls+=v>=70?' hi':(v<40?' lo':'');
+      return `<td class="${cls}">${v===''?'':esc(v)+suf}</td>`;
+    }
+    return `<td>${esc(v==null?'':v)}</td>`;
+  }).join('')+'</tr>').join('');
+  const n=DATA.students.length;
+  $('foot').textContent=rows.length+' row'+(rows.length===1?'':'s')+' shown. Newest submission of each student only.';
+  const st=$('clsFilter').value?DATA.students.filter(r=>r.cls===$('clsFilter').value):DATA.students;
+  const avg=st.length?Math.round(st.reduce((a,r)=>a+r.pct,0)/st.length):0;
+  const tries=st.length?+(st.reduce((a,r)=>a+r.wrong,0)/st.length).toFixed(1):0;
+  const hints=st.length?+(st.reduce((a,r)=>a+r.hints,0)/st.length).toFixed(1):0;
+  $('kpis').innerHTML=[['Students'+($('clsFilter').value?' in '+$('clsFilter').value+' (of '+n+')':''),st.length],
+    ['Average % solved',avg+'%'],['Average wrong tries',tries],['Average hints',hints]]
+    .map(([k,v])=>`<div class="kpi"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join('');
+}
+
+$('tbl').tHead.addEventListener('click',e=>{
+  const th=e.target.closest('th');if(!th)return;const i=+th.dataset.i;const s=SORT[TAB];
+  if(s.i===i)s.dir*=-1;else{s.i=i;s.dir=1}render();
+});
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  TAB=b.dataset.tab;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',String(x===b)));render();
+}));
+$('clsFilter').addEventListener('change',render);
+
+function show(subs,note){
+  const good=[],errs=[];
+  subs.forEach(o=>good.push(o));
+  DATA=build(good);DATA.raw=good;
+  $('out').hidden=false;
+  $('warn').hidden=!note;if(note)$('warn').textContent=note;
+  render();
+}
+
+/* ---------- load from the Apps Script ---------- */
+function saveSettings(){
+  try{
+    if($('remember').checked)localStorage.setItem(STORE,JSON.stringify({u:$('url').value.trim(),k:$('key').value}));
+    else localStorage.removeItem(STORE);
+  }catch(e){}
+}
+try{const r=localStorage.getItem(STORE);if(r){const o=JSON.parse(r);$('url').value=o.u||'';$('key').value=o.k||''}}catch(e){}
+
+$('load').addEventListener('click',async()=>{
+  $('err').hidden=true;
+  const u=$('url').value.trim(),k=$('key').value;
+  if(!/^https?:\/\/[^\s]+\/exec$/.test(u)){
+    $('err').textContent='The link must be your Apps Script web app link and end with /exec (not /dev).';$('err').hidden=false;return}
+  if(!k){$('err').textContent='Type your secret key.';$('err').hidden=false;return}
+  saveSettings();
+  $('load').disabled=true;$('loadMsg').textContent='Loading...';
+  try{
+    const r=await fetch(u+'?key='+encodeURIComponent(k)+'&t='+Date.now(),{method:'GET',redirect:'follow'});
+    if(!r.ok)throw new Error('The server answered '+r.status+'.');
+    const d=JSON.parse(await r.text());
+    if(!d.ok)throw new Error(d.error==='wrong key'?'Wrong secret key.':'The server said: '+d.error);
+    const subs=[],bad=[];
+    (d.rows||[]).forEach(row=>{const res=decodeCode(row.code);if(res.err)bad.push(res.err);else subs.push(res.ok)});
+    if(!subs.length){$('loadMsg').textContent='';$('err').textContent=bad.length?'No readable results yet ('+bad.length+' damaged).':'No results yet. Ask a student to press Submit.';$('err').hidden=false;$('out').hidden=true;return}
+    show(subs,bad.length?bad.length+' row(s) in the sheet could not be read and were skipped.':'');
+    $('loadMsg').textContent='Loaded '+subs.length+' submission'+(subs.length===1?'':'s')+' at '+new Date().toLocaleTimeString('en-GB')+'.';
+  }catch(e){
+    $('err').textContent=(e&&e.message)||'Could not reach the server. Check the link and that the deployment allows "Anyone".';
+    $('err').hidden=false;$('loadMsg').textContent='';
+  }
+  $('load').disabled=false;
+});
+
+/* ---------- fallback: paste codes ---------- */
+async function readFiles(files){let out='';for(const f of files){try{out+='\n'+await f.text()}catch(e){}}return out}
+$('readPaste').addEventListener('click',async()=>{
+  $('err').hidden=true;
+  let text=$('paste').value;const fs=$('files').files;if(fs&&fs.length)text+=await readFiles(fs);
+  const codes=collectCodes(text);
+  if(!codes.length){$('err').textContent='No codes found. The codes start with CC1.';$('err').hidden=false;return}
+  const subs=[],bad=[];
+  codes.forEach((c,i)=>{const r=decodeCode(c);if(r.err)bad.push('Code '+(i+1)+': '+r.err+'.');else subs.push(r.ok)});
+  if(!subs.length){$('err').textContent=bad.join(' ');$('err').hidden=false;return}
+  show(subs,bad.length?bad.join(' '):'');
+  $('loadMsg').textContent='Read '+subs.length+' code'+(subs.length===1?'':'s')+' from the box.';
+});
+
+/* ---------- download ---------- */
+function aoa(tab){const rows=rowsFor(tab);const cols=COLS[tab];
+  return [cols.map(c=>c[0])].concat(rows.map(r=>cols.map(c=>{
+    const v=r[c[1]];if(c[2]==='b')return v?'Yes':'No';
+    return (v===''||v==null)?'':(c[4]?v+c[4]:v)})))}
+function tsv(rows){return rows.map(r=>r.map(c=>String(c).replace(/[\t\r\n]+/g,' ')).join('\t')).join('\n')}
+let xlsxP=null;
+function loadXLSX(){if(window.XLSX)return Promise.resolve(window.XLSX);
+  if(!xlsxP)xlsxP=new Promise((res,rej)=>{const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload=()=>window.XLSX?res(window.XLSX):rej(new Error('xlsx'));s.onerror=()=>{xlsxP=null;rej(new Error('xlsx'))};
+    document.head.appendChild(s)});
+  return xlsxP}
+$('xlsx').addEventListener('click',async()=>{
+  if(!DATA)return;$('dlMsg').textContent='Building file...';
+  try{
+    const X=await loadXLSX();const wb=X.utils.book_new();
+    const add=(name,rows,w)=>{const ws=X.utils.aoa_to_sheet(rows);ws['!cols']=w.map(x=>({wch:x}));X.utils.book_append_sheet(wb,ws,name)};
+    add('Students',aoa('students'),[8,6,16,20,8,6,10,12,8,10]);
+    add('By question',aoa('byq'),[10,6,60,10,10,16,10,12]);
+    add('Every part',aoa('details'),[8,6,16,10,6,60,8,12,8,10]);
+    const buf=X.write(wb,{bookType:'xlsx',type:'array'});
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');
+    a.href=url;a.download='circuit-coach-results.xlsx';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+    $('dlMsg').textContent='Saved.';
+  }catch(e){$('dlMsg').textContent='Could not make the .xlsx file. Use "Copy for Google Sheets".'}
+});
+$('copy').addEventListener('click',async()=>{
+  if(!DATA)return;
+  const text='STUDENTS\n'+tsv(aoa('students'))+'\n\nBY QUESTION\n'+tsv(aoa('byq'))+'\n\nEVERY PART\n'+tsv(aoa('details'));
+  const box=$('tsvBox');box.value=text;
+  try{await navigator.clipboard.writeText(text);box.hidden=true;$('dlMsg').textContent='Copied. Paste into Google Sheets or Excel.'}
+  catch(e){box.hidden=false;box.focus();box.select();$('dlMsg').textContent='Copy the text in the box, then paste into a sheet.'}
+});
+</script>
+</body>
+</html>

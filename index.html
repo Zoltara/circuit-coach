@@ -155,12 +155,6 @@ textarea{width:100%;min-height:64px;padding:8px 10px;border:2px solid var(--line
 .subrow #resetBtn{justify-self:end}
 #subOut{align-items:center;text-align:center}
 @media (max-width:520px){.subrow{grid-template-columns:1fr;justify-items:center}.subrow #resetBtn{justify-self:center}.subrow span{display:none}}
-details.teacher{border:2px dashed var(--line);border-radius:12px;padding:10px 14px;background:var(--paper)}
-details.teacher summary{cursor:pointer;font-weight:600}
-table.pre{border-collapse:collapse;width:100%;font-size:.85rem;font-family:var(--mono)}
-table.pre th,table.pre td{border:1px solid var(--line);padding:4px 8px;text-align:left}
-table.pre th{background:var(--bg)}
-.tscroll{overflow-x:auto;max-height:260px;overflow-y:auto}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -256,22 +250,6 @@ table.pre th{background:var(--bg)}
       </details>
     </div>
   </section>
-
-  <details class="teacher" id="teacher">
-    <summary>Teacher: build the spreadsheet</summary>
-    <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
-      <p style="margin:0">Paste the students' codes here (one or many, any text around them is fine), or add the saved .txt files. The latest submission of each student is used.</p>
-      <textarea id="tIn" aria-label="Pasted student codes" placeholder="CC1.xxxxxxxx.eyJ2Ijox..."></textarea>
-      <div class="row"><input type="file" id="tFiles" accept=".txt,text/plain" multiple aria-label="Add .txt files"><button class="btn" id="tBuild" type="button">Build table</button></div>
-      <div class="fb bad" id="tErr" hidden></div>
-      <div id="tOut" hidden style="display:none;flex-direction:column;gap:10px">
-        <div class="meta" id="tCount"></div>
-        <div class="tscroll"><table class="pre" id="tTable"></table></div>
-        <div class="row"><button class="btn warm" id="tXlsx" type="button">Download spreadsheet (.xlsx)</button><button class="btn ghost" id="tTsv" type="button">Copy table for Google Sheets</button><span class="meta" id="tMsg"></span></div>
-        <textarea id="tsvBox" hidden readonly aria-label="Table to copy"></textarea>
-      </div>
-    </div>
-  </details>
 </div>
 
 <script>
@@ -687,18 +665,10 @@ $('nick').addEventListener('input',e=>{S.nick=e.target.value;save();paintWho()})
 /* ================= Submission code ================= */
 function hash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return h.toString(16).padStart(8,'0')}
 function toB64(str){const b=new TextEncoder().encode(str);let bin='';b.forEach(x=>bin+=String.fromCharCode(x));return btoa(bin)}
-function fromB64(b64){const bin=atob(b64);const b=Uint8Array.from(bin,c=>c.charCodeAt(0));return new TextDecoder().decode(b)}
 function buildCode(){
   const parts={};EX.forEach(e=>e.parts.forEach(p=>{const s=P(e.id,p.id);parts[e.id+'.'+p.id]=[s.solved?1:0,s.att,s.hints,s.steps?1:0]}));
   const payload={v:1,c:S.cls,n:+S.num,k:S.nick.trim(),t:new Date().toISOString(),p:parts};
   const b=toB64(JSON.stringify(payload));return 'CC1.'+hash(b)+'.'+b;
-}
-function decodeCode(code){
-  const m=code.match(/^CC1\.([0-9a-f]{8})\.([A-Za-z0-9+/=]+)$/);if(!m)return {err:'not a Circuit Coach code'};
-  if(hash(m[2])!==m[1])return {err:'the code is damaged (copy it again)'};
-  let o;try{o=JSON.parse(fromB64(m[2]))}catch(e){return {err:'the code cannot be read'}}
-  if(!o||o.v!==1||!CLASSES.includes(o.c)||!numOk(o.n)||typeof o.p!=='object')return {err:'the student details are not valid'};
-  return {ok:o};
 }
 function showErr(el,msg){el.textContent=msg;el.hidden=false}
 function sumUp(){let solved=0,wrong=0,hints=0,steps=0,total=0;
@@ -773,68 +743,6 @@ $('resetBtn').addEventListener('click',()=>{
   if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Tap again to erase my work';setTimeout(()=>{b.dataset.sure='';b.textContent='Start over'},3000);return}
   S={cls:S.cls,num:S.num,nick:S.nick,cur:EX[0].id,p:{}};Object.keys(chat).forEach(k=>delete chat[k]);save();b.dataset.sure='';b.textContent='Start over';
   $('subOut').style.display='none';$('subOut').hidden=true;renderNav();renderEx();
-});
-
-/* ================= Teacher: codes -> spreadsheet ================= */
-let TROWS=null;
-const exLabel=(eid,pid)=>{const e=exById(eid);return {ex:e.nav,part:e.parts.length>1?pid:'',q:e.parts.find(p=>p.id===pid).q}};
-function collectCodes(text){return (text.match(/CC1\.[0-9a-f]{8}\.[A-Za-z0-9+/=]+/g)||[])}
-function buildTables(codes){
-  const errs=[];const latest=new Map();
-  codes.forEach((c,i)=>{const r=decodeCode(c);if(r.err){errs.push(`Code ${i+1}: ${r.err}.`);return}
-    const o=r.ok;const key=o.c+'|'+o.n;const prev=latest.get(key);if(!prev||o.t>=prev.t)latest.set(key,o)});
-  const subs=[...latest.values()].sort((a,b)=>a.c.localeCompare(b.c)||a.n-b.n);
-  const allKeys=[];EX.forEach(e=>e.parts.forEach(p=>allKeys.push([e.id,p.id])));
-  const summary=[['Class','Number','Nickname','Submitted','Parts solved','Parts total','Percent solved','Wrong tries','Hints used','Steps viewed']];
-  const details=[['Class','Number','Nickname','Question','Part','Solved','Wrong tries','Hints used','Saw steps']];
-  const stat={};allKeys.forEach(([e,p])=>stat[e+'.'+p]={n:0,s:0,t:0,h:0,st:0});
-  subs.forEach(o=>{let s=0,t=0,h=0,st=0;
-    allKeys.forEach(([e,p])=>{const k=e+'.'+p;const v=o.p[k]||[0,0,0,0];const L=exLabel(e,p);
-      s+=v[0];t+=v[1];h+=v[2];st+=v[3];
-      details.push([o.c,o.n,o.k,L.ex,L.part,v[0]?'Yes':'No',v[1],v[2],v[3]?'Yes':'No']);
-      const a=stat[k];a.n++;a.s+=v[0];a.t+=v[1];a.h+=v[2];a.st+=v[3]});
-    const when=new Date(o.t);summary.push([o.c,o.n,o.k,isNaN(when)?o.t:when.toLocaleString('en-GB'),s,allKeys.length,Math.round(s/allKeys.length*100)+'%',t,h,st])});
-  const byq=[['Question','Part','Item','Students','% solved','Avg wrong tries','Avg hints','% saw steps']];
-  allKeys.forEach(([e,p])=>{const a=stat[e+'.'+p];const L=exLabel(e,p);const n=a.n||1;
-    byq.push([L.ex,L.part,L.q,a.n,a.n?Math.round(a.s/n*100)+'%':'',a.n?+(a.t/n).toFixed(2):'',a.n?+(a.h/n).toFixed(2):'',a.n?Math.round(a.st/n*100)+'%':''])});
-  return {summary,details,byq,errs,count:subs.length};
-}
-function renderTeacher(t){
-  $('tErr').hidden=!t.errs.length;if(t.errs.length)$('tErr').textContent=t.errs.join(' ');
-  if(!t.count){$('tOut').style.display='none';$('tOut').hidden=true;if(!t.errs.length)showErr($('tErr'),'No Circuit Coach codes found. Paste the codes that start with CC1.');return}
-  $('tOut').hidden=false;$('tOut').style.display='flex';
-  $('tCount').textContent=`${t.count} student${t.count===1?'':'s'} found.`;
-  $('tTable').innerHTML=t.summary.map((r,i)=>`<tr>${r.map(c=>i?`<td>${esc(c)}</td>`:`<th>${esc(c)}</th>`).join('')}</tr>`).join('');
-}
-async function readFiles(files){let out='';for(const f of files){try{out+='\n'+await f.text()}catch(e){}}return out}
-$('tBuild').addEventListener('click',async()=>{
-  $('tErr').hidden=true;$('tMsg').textContent='';
-  let text=$('tIn').value;const files=$('tFiles').files;if(files&&files.length)text+=await readFiles(files);
-  TROWS=buildTables(collectCodes(text));renderTeacher(TROWS);
-});
-let xlsxP=null;
-function loadXLSX(){if(window.XLSX)return Promise.resolve(window.XLSX);
-  if(!xlsxP)xlsxP=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=()=>window.XLSX?res(window.XLSX):rej(new Error('xlsx'));s.onerror=()=>{xlsxP=null;rej(new Error('xlsx'))};document.head.appendChild(s)});
-  return xlsxP}
-function tsv(rows){return rows.map(r=>r.map(c=>String(c).replace(/[\t\r\n]+/g,' ')).join('\t')).join('\n')}
-$('tXlsx').addEventListener('click',async()=>{
-  if(!TROWS||!TROWS.count)return;$('tMsg').textContent='Building file...';
-  try{
-    const X=await loadXLSX();const wb=X.utils.book_new();
-    const add=(name,rows,widths)=>{const ws=X.utils.aoa_to_sheet(rows);ws['!cols']=widths.map(w=>({wch:w}));X.utils.book_append_sheet(wb,ws,name)};
-    add('Summary',TROWS.summary,[8,8,16,20,12,11,14,12,11,13]);
-    add('Details',TROWS.details,[8,8,16,10,6,8,12,11,10]);
-    add('By question',TROWS.byq,[10,6,60,10,10,15,10,12]);
-    const buf=X.write(wb,{bookType:'xlsx',type:'array'});
-    await saveFile('circuit-coach-results.xlsx',buf,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    $('tMsg').textContent='Spreadsheet saved.';
-  }catch(e){$('tMsg').textContent=e&&e.code==='declined'?'Save cancelled.':'Could not make the .xlsx file. Use "Copy table for Google Sheets" instead.'}
-});
-$('tTsv').addEventListener('click',async()=>{
-  if(!TROWS||!TROWS.count)return;const text='SUMMARY\n'+tsv(TROWS.summary)+'\n\nDETAILS\n'+tsv(TROWS.details)+'\n\nBY QUESTION\n'+tsv(TROWS.byq);
-  const box=$('tsvBox');box.value=text;
-  try{await navigator.clipboard.writeText(text);box.hidden=true;$('tMsg').textContent='Copied. Paste into Google Sheets or Excel.'}
-  catch(e){box.hidden=false;box.focus();box.select();$('tMsg').textContent='Copy the text in the box, then paste into a sheet.'}
 });
 
 /* ================= AI tutor (page asks Claude; hidden if unavailable) ================= */

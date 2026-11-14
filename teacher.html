@@ -37,6 +37,8 @@ textarea{min-height:90px;font-family:var(--mono);font-size:.8rem}
 .btn{font:inherit;font-weight:600;cursor:pointer;border:2px solid var(--primary);background:var(--primary);color:var(--primary-ink);border-radius:10px;padding:9px 16px}
 .btn.ghost{background:transparent;color:var(--primary)}
 .btn.warm{background:var(--accent);border-color:var(--accent);color:#2a1400}
+.btn.danger{background:transparent;border-color:var(--bad);color:var(--bad)}
+.btn.danger.sure{background:var(--bad);color:#fff}
 .btn:disabled{opacity:.55;cursor:default}
 .meta{font-size:.85rem;color:var(--muted)}
 .fb{border-radius:10px;padding:8px 12px;font-size:.93rem}
@@ -81,6 +83,7 @@ details summary{cursor:pointer;font-weight:600}
       <button class="btn" id="load" type="button">Load results</button>
       <label style="flex-direction:row;align-items:center;gap:6px;font-weight:400"><input type="checkbox" id="remember" style="width:auto" checked> Remember on this computer</label>
       <a class="btn ghost" id="sheetLink" href="#" target="_blank" rel="noopener" hidden style="text-decoration:none">Open the Google Sheet</a>
+      <button class="btn danger" id="clearBtn" type="button" hidden>Clear all results</button>
       <span class="meta" id="loadMsg"></span>
     </div>
     <div class="fb bad" id="err" hidden></div>
@@ -231,6 +234,7 @@ document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',
 $('clsFilter').addEventListener('change',render);
 
 function show(subs,note){
+  $('clearBtn').hidden=true;      /* only a real load from the sheet turns this on */
   const good=[],errs=[];
   subs.forEach(o=>good.push(o));
   DATA=build(good);DATA.raw=good;
@@ -268,12 +272,41 @@ $('load').addEventListener('click',async()=>{
     (d.rows||[]).forEach(row=>{const res=decodeCode(row.code);if(res.err)bad.push(res.err);else subs.push(res.ok)});
     if(!subs.length){$('loadMsg').textContent='';$('err').textContent=bad.length?'No readable results yet ('+bad.length+' damaged).':'No results yet. Ask a student to press Submit.';$('err').hidden=false;$('out').hidden=true;return}
     show(subs,bad.length?bad.length+' row(s) in the sheet could not be read and were skipped.':'');
+    $('clearBtn').hidden=false;
     $('loadMsg').textContent='Loaded '+subs.length+' submission'+(subs.length===1?'':'s')+' at '+new Date().toLocaleTimeString('en-GB')+'.';
   }catch(e){
     $('err').textContent=(e&&e.message)||'Could not reach the server. Check the link and that the deployment allows "Anyone".';
     $('err').hidden=false;$('loadMsg').textContent='';
   }
   $('load').disabled=false;
+});
+
+/* ---------- empty the sheet ---------- */
+let clearTimer=null;
+function restClear(){const b=$('clearBtn');b.classList.remove('sure');b.textContent='Clear all results';b.dataset.sure='';if(clearTimer){clearTimeout(clearTimer);clearTimer=null}}
+$('clearBtn').addEventListener('click',async()=>{
+  const b=$('clearBtn');
+  const n=DATA&&DATA.raw?DATA.raw.length:0;
+  if(b.dataset.sure!=='1'){
+    b.dataset.sure='1';b.classList.add('sure');
+    b.textContent=`Press again to delete ${n} result${n===1?'':'s'}`;
+    clearTimer=setTimeout(restClear,10000);
+    return;
+  }
+  restClear();
+  $('err').hidden=true;b.disabled=true;$('dlMsg').textContent='';$('loadMsg').textContent='Clearing...';
+  try{
+    const r=await fetch(EXEC_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({task:'clear',key:$('key').value}),redirect:'follow'});
+    if(!r.ok)throw new Error('The server answered '+r.status+'.');
+    const d=JSON.parse(await r.text());
+    if(!d.ok)throw new Error(d.error==='wrong key'?'Wrong secret key.':'The server said: '+d.error);
+    DATA=null;$('out').hidden=true;$('clearBtn').hidden=true;$('sheetLink').hidden=true;
+    $('loadMsg').textContent=`Cleared ${d.cleared} result${d.cleared===1?'':'s'}. The sheet is empty now.`;
+  }catch(e){
+    $('err').textContent=(e&&e.message)||'Could not clear the results.';$('err').hidden=false;$('loadMsg').textContent='';
+  }
+  b.disabled=false;
 });
 
 /* ---------- fallback: paste codes ---------- */

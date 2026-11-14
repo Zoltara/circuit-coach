@@ -73,14 +73,10 @@ details summary{cursor:pointer;font-weight:600}
 
   <section class="card">
     <h2>1. Connect</h2>
-    <div class="grid">
-      <label for="url">Apps Script web app link (ends with /exec)
-        <input id="url" placeholder="https://script.google.com/macros/s/..../exec" autocomplete="off" spellcheck="false">
-      </label>
-      <label for="key">Secret key
-        <input id="key" type="password" placeholder="your secret key" autocomplete="off">
-      </label>
-    </div>
+    <p style="margin:0">Type your secret key and press <b>Load results</b>.</p>
+    <label for="key" style="max-width:360px">Secret key
+      <input id="key" type="password" placeholder="your secret key" autocomplete="off">
+    </label>
     <div class="row">
       <button class="btn" id="load" type="button">Load results</button>
       <label style="flex-direction:row;align-items:center;gap:6px;font-weight:400"><input type="checkbox" id="remember" style="width:auto" checked> Remember on this computer</label>
@@ -123,7 +119,7 @@ details summary{cursor:pointer;font-weight:600}
 
 <script>
 /* ---------- the 12 questions and their 24 parts (same order as the student page) ---------- */
-const QMETA=[{"id":"q5","nav":"Q1","parts":[{"id":"a","q":"What do ammeters A1 and A2 read?"}]},{"id":"q6","nav":"Q2","parts":[{"id":"a","q":"What do ammeters A1 and A2 read?"}]},{"id":"q7","nav":"Q3","parts":[{"id":"a","q":"What do voltmeters V1 and V2 read?"}]},{"id":"q8","nav":"Q4","parts":[{"id":"a","q":"What do voltmeters V1 and V2 read?"},{"id":"b","q":"What do ammeters A1 and A2 read?"}]},{"id":"e1","nav":"Q5","parts":[{"id":"a","q":"What is the total current IT?"},{"id":"b","q":"What is the resistance of bulb 3?"}]},{"id":"e2","nav":"Q6","parts":[{"id":"a","q":"What is the missing current X?"}]},{"id":"e3","nav":"Q7","parts":[{"id":"a","q":"What current flows through bulb X?"},{"id":"b","q":"What is the potential difference (voltage) across bulb X?"},{"id":"c","q":"What is the potential difference across the resistor R?"},{"id":"d","q":"What is the potential difference across bulb Y?"},{"id":"e","q":"What is the total resistance of the circuit?"}]},{"id":"e4","nav":"Q8","parts":[{"id":"a","q":"What is the current through the 5 Ω resistor?"},{"id":"b","q":"What is the total resistance of the circuit?"},{"id":"c","q":"What is the voltage across the 5 Ω resistor?"},{"id":"d","q":"What is the current I1 through the 12 Ω resistor?"}]},{"id":"e5","nav":"Q9","parts":[{"id":"a","q":"What is the resistance of the light bulb?"}]},{"id":"e6","nav":"Q10","parts":[{"id":"a","q":"What current flows through L4?"}]},{"id":"e7","nav":"Q11","parts":[{"id":"a","q":"What is the resistance of R2?"}]}];
+const QMETA=[{"id":"q5","nav":"Q1","parts":[{"id":"a","q":"What do ammeters A1 and A2 read?"}]},{"id":"q6","nav":"Q2","parts":[{"id":"a","q":"What do ammeters A1 and A2 read?"}]},{"id":"q7","nav":"Q3","parts":[{"id":"a","q":"What do voltmeters V1 and V2 read?"}]},{"id":"e1","nav":"Q4","parts":[{"id":"a","q":"What is the total current IT?"},{"id":"b","q":"What is the resistance of bulb 3?"}]},{"id":"e2","nav":"Q5","parts":[{"id":"a","q":"What is the missing current X?"}]},{"id":"e3","nav":"Q6","parts":[{"id":"a","q":"What current flows through bulb X?"},{"id":"b","q":"What is the potential difference (voltage) across bulb X?"},{"id":"c","q":"What is the potential difference across the resistor R?"},{"id":"d","q":"What is the potential difference across bulb Y?"},{"id":"e","q":"What is the total resistance of the circuit?"}]},{"id":"e4","nav":"Q7","parts":[{"id":"a","q":"What is the current through the 5 Ω resistor?"},{"id":"b","q":"What is the total resistance of the circuit?"},{"id":"c","q":"What is the voltage across the 5 Ω resistor?"},{"id":"d","q":"What is the current I1 through the 12 Ω resistor?"}]},{"id":"e5","nav":"Q8","parts":[{"id":"a","q":"What is the resistance of the light bulb?"}]},{"id":"e6","nav":"Q9","parts":[{"id":"a","q":"What current flows through L4?"}]},{"id":"e7","nav":"Q10","parts":[{"id":"a","q":"What is the resistance of R2?"}]}];
 const CLASSES=['3.15','3.16'];
 const KEYS=[];QMETA.forEach(e=>e.parts.forEach(p=>KEYS.push([e.id,p.id])));
 const LABEL={};QMETA.forEach(e=>e.parts.forEach(p=>LABEL[e.id+'.'+p.id]={ex:e.nav,part:e.parts.length>1?p.id:'',q:p.q}));
@@ -131,6 +127,9 @@ const LABEL={};QMETA.forEach(e=>e.parts.forEach(p=>LABEL[e.id+'.'+p.id]={ex:e.na
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const STORE='circuit-coach-teacher';
+/* Where the results come from. This is the same Apps Script link the student page
+   already uses, so it is no secret - only the key below opens the results. */
+const EXEC_URL='https://script.google.com/macros/s/AKfycbyP3eE2Ki4ThPLNPTDvj05V3HAVdrng1jFlfm-dDDSWGtPdtgQ1TJOqiH1aVz6l2Ksa/exec';
 
 /* ---------- reading a student code (same format as the student page) ---------- */
 function hash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return h.toString(16).padStart(8,'0')}
@@ -243,18 +242,17 @@ function show(subs,note){
 /* ---------- load from the Apps Script ---------- */
 function saveSettings(){
   try{
-    if($('remember').checked)localStorage.setItem(STORE,JSON.stringify({u:$('url').value.trim(),k:$('key').value}));
+    if($('remember').checked)localStorage.setItem(STORE,JSON.stringify({k:$('key').value}));
     else localStorage.removeItem(STORE);
   }catch(e){}
 }
-try{const r=localStorage.getItem(STORE);if(r){const o=JSON.parse(r);$('url').value=o.u||'';$('key').value=o.k||''}}catch(e){}
+try{const r=localStorage.getItem(STORE);if(r){const o=JSON.parse(r);$('key').value=o.k||''}}catch(e){}
+if(!$('key').value)$('key').focus();
 
 $('load').addEventListener('click',async()=>{
   $('err').hidden=true;
-  const u=$('url').value.trim(),k=$('key').value;
-  if(!/^https?:\/\/[^\s]+\/exec$/.test(u)){
-    $('err').textContent='The link must be your Apps Script web app link and end with /exec (not /dev).';$('err').hidden=false;return}
-  if(!k){$('err').textContent='Type your secret key.';$('err').hidden=false;return}
+  const u=EXEC_URL,k=$('key').value;
+  if(!k){$('err').textContent='Type your secret key.';$('err').hidden=false;$('key').focus();return}
   saveSettings();
   $('load').disabled=true;$('loadMsg').textContent='Loading...';
   try{

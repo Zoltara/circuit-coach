@@ -147,6 +147,7 @@ svg .tagtxt.unk{fill:var(--mt)}
 .btn{border:2px solid var(--primary);background:var(--primary);color:var(--primary-ink);border-radius:10px;padding:8px 16px;font-weight:600;cursor:pointer}
 .btn.ghost{background:transparent;color:var(--primary)}
 .btn.warm{background:var(--accent);border-color:var(--accent);color:#1a0d00}
+.btn.ok{background:var(--good);border-color:var(--good);color:var(--primary-ink)}
 .btn.big{padding:12px 22px;font-size:1.05rem}
 .btn:disabled{opacity:.45;cursor:default}
 .fb{border-radius:10px;padding:8px 12px;font-size:.95rem}
@@ -384,26 +385,7 @@ const EX=[
   hints:['How are the two bulbs connected: in series or in parallel?','In a parallel circuit the voltage is the same in every branch: VT = V1 = V2.','The battery and the bottom bulb are connected across the same two points as the top bulb.'],
   steps:['The bulbs are on branches, so this is a parallel circuit.','VT = V1 = V2','The top bulb has 4.5 V, so the battery and the bottom bulb also have 4.5 V.'],
   wrong:[{v:9,m:'9 V is 4.5 + 4.5. Adding voltages is the series rule. These bulbs are on branches.'},{v:2.25,m:'Voltage is not divided between branches. Every branch gets the full voltage.'}]}]},
-{id:'q8',nav:'Q4',kicker:'Question 4 · series',title:'Find the meter readings',
- prompt:'Both light bulbs are identical (same resistance). The battery is 9 V and the ammeter on the left reads 3 A. Fill in V1, V2, A1 and A2.',
- alt:'Series loop with a 9 volt battery, a 3 amp ammeter, two identical bulbs with voltmeters V1 and V2, and ammeters A1 and A2.',
- givens:[9,3],mk:['V1','V2','A1','A2'],
- draw:()=>{const x0=70,x1=350,yt=76,yb=226;let s='';
-   s+=hrow(yt,x0,x1,[{t:'bat',x:210}]);
-   s+=vcol(x0,yt,yb,[{t:'meter',k:'A',y:150,tag:'3 A',tp:'r'}]);
-   s+=vcol(x1,yt,yb,[{t:'meter',k:'A',y:150,unk:'A2',tp:'l'}]);
-   s+=hrow(yb,x0,x1,[{t:'bulb',x:140},{t:'meter',k:'A',x:210,unk:'A1',tp:'b'},{t:'bulb',x:280}]);
-   s+=across(210,yt,6,32,'9 V');s+=across(140,yb,13,40,'','V1');s+=across(280,yb,13,40,'','V2');
-   return svg(420,290,s,'Series loop with two bulbs and meters')},
- parts:[{id:'a',q:'What do voltmeters V1 and V2 read?',unit:'V',fields:[{k:'V1',ans:4.5},{k:'V2',ans:4.5}],
-  hints:['The two bulbs are identical. That is an important clue. Are they in series or in parallel?','In series the battery voltage is shared: VT = V1 + V2. Identical bulbs share it equally.','VT = 9 V. Split 9 V equally between two identical bulbs.'],
-  steps:['The bulbs are in one line, so this is a series circuit.','VT = V1 + V2, so 9 = V1 + V2','The bulbs are identical, so V1 = V2 = 4.5 V.'],
-  wrong:[{v:9,m:'9 V is the whole battery. In series the two bulbs share the voltage, so each gets only part.'},{v:18,m:'Voltages do not add up to more than the battery voltage. The battery voltage is the total.'}]},
- {id:'b',q:'What do ammeters A1 and A2 read?',unit:'A',fields:[{k:'A1',ans:3},{k:'A2',ans:3}],
-  hints:['Is this a series or a parallel circuit?','In series the current is the same everywhere: IT = I1 = I2.','One ammeter already reads 3 A.'],
-  steps:['This is a series circuit.','IT = I1 = I2','Every ammeter reads 3 A.'],
-  wrong:[{v:1.5,m:'In series the current is not shared. Every point has the same current.'},{v:6,m:'Do not add the currents. In series the current stays the same.'}]}]},
-{id:'e1',nav:'Q5',kicker:'Question 5 · parallel',title:'Three identical bulbs',
+{id:'e1',nav:'Q4',kicker:'Question 4 · parallel',title:'Three identical bulbs',
  prompt:'All the bulbs are identical. The ammeter reads 0.5 A and the battery is 6 V.',
  alt:'Parallel circuit with a 6 volt battery and three identical bulbs on three branches. An ammeter on the middle branch reads 0.5 amps.',
  givens:[6,0.5],mk:[],
@@ -418,7 +400,7 @@ const EX=[
   hints:['The bulbs are identical, so bulb 3 carries the same current as bulb 2, the one with the ammeter. What is I3? Then which rule links V, I and R?','Ohm\'s law: R = V / I. Cover R in the triangle.','In parallel, V3 = VT = 6 V. I3 = 0.5 A. Put the numbers into R = V / I.'],
   steps:['I3 = 0.5 A','V3 = VT = 6 V (parallel)','R3 = V3 / I3 = 6 / 0.5 = 12 Ω'],
   wrong:[{v:0.08,m:'You calculated I ÷ V. Cover R in the triangle: R = V / I.'},{v:3,m:'You multiplied V × I. Resistance is V divided by I.'}]}]},
-{id:'e2',nav:'Q6',kicker:'Question 6 · parallel',title:'Find the missing current',
+{id:'e2',nav:'Q5',kicker:'Question 5 · parallel',title:'Find the missing current',
  prompt:'The main ammeter reads 15 A. Two of the branches read 7 A and 3 A. Find the missing current X.',
  alt:'A parallel circuit with three resistors. The main ammeter reads 15 amps. The branch ammeters read X, 7 amps and 3 amps.',
  givens:[15,7,3],mk:['X'],
@@ -428,7 +410,7 @@ const EX=[
   hints:['What does the main ammeter measure compared with the branch ammeters?','IT = I1 + I2 + I3. Write the numbers you know and call the missing one X.','15 = 7 + 3 + X. Get X on its own.'],
   steps:['Parallel: IT = I1 + I2 + I3','15 = 7 + 3 + X','X = 15 − 7 − 3 = 5 A'],
   wrong:[{v:25,m:'You added the main ammeter too. IT is the total, and the branches add up to IT.'},{v:10,m:'10 A is 7 + 3, the other two branches. Subtract them from the total.'},{v:[8,12],m:'You subtracted only one branch. There are two known branches to subtract.'}]}]},
-{id:'e3',nav:'Q7',kicker:'Question 7 · mixed',title:'Bulbs X and Y with a resistor',
+{id:'e3',nav:'Q6',kicker:'Question 6 · mixed',title:'Bulbs X and Y with a resistor',
  prompt:'A 9 V battery. The total current is 0.9 A and the current through bulb Y is 0.3 A. R = 12 Ω.',
  alt:'9 volt battery. Bulb X is on one branch. The second branch has a 12 ohm resistor R in series with bulb Y. Total current 0.9 amps, current in bulb Y 0.3 amps.',
  givens:[9,0.9,0.3,12],mk:[],
@@ -457,7 +439,7 @@ const EX=[
   hints:['Use the whole circuit: the battery voltage and the battery current.','Ohm\'s law for the whole circuit: RT = VT / IT.','VT = 9 V. IT is the total current from the battery.'],
   steps:['RT = VT / IT','RT = 9 / 0.9 = 10 Ω'],
   wrong:[{v:30,m:'9 ÷ 0.3 uses the current of one branch. Total resistance uses the total current.'},{v:15,m:'9 ÷ 0.6 uses the current of bulb X only. Use the total current.'},{v:12,m:'12 Ω is the resistor R only, not the whole circuit.'}]}]},
-{id:'e4',nav:'Q8',kicker:'Question 8 · mixed',title:'5 Ω in series with 12 Ω and 4 Ω in parallel',
+{id:'e4',nav:'Q7',kicker:'Question 7 · mixed',title:'5 Ω in series with 12 Ω and 4 Ω in parallel',
  prompt:'A 32 V battery. The current from the battery is 4 A.',
  alt:'32 volt battery. A 5 ohm resistor is in series with a parallel pair: a 12 ohm resistor carrying I1 and a 4 ohm resistor carrying I2. The battery current is 4 amps.',
  givens:[32,4,5,12],mk:[],
@@ -486,7 +468,7 @@ const EX=[
   hints:['The 12 Ω and 4 Ω resistors are in parallel, so they have the same voltage. How much voltage is left for them after the 5 Ω resistor?','Series: VT = V5 + Vparallel. Then I = V / R for the 12 Ω resistor.','Vparallel = 32 − 20 = 12 V. Now use I1 = V / R with R = 12 Ω.'],
   steps:['V5 = 20 V, so the parallel pair gets 32 − 20 = 12 V','The same 12 V is across the 12 Ω resistor','I1 = V / R = 12 / 12 = 1 A'],
   wrong:[{v:2.67,m:'You used 32 ÷ 12. Only 12 V is across the parallel pair, not the full 32 V.'},{v:3,m:'That is the current in the 4 Ω branch (12 ÷ 4). The question asks for the 12 Ω branch.'},{v:4,m:'4 A is the total current. I1 is only part of it.'}]}]},
-{id:'e5',nav:'Q9',kicker:'Question 9 · series',title:'Find the resistance of the light bulb',
+{id:'e5',nav:'Q8',kicker:'Question 8 · series',title:'Find the resistance of the light bulb',
  prompt:'A 36 V battery. The ammeter reads 2 A. The resistor is 8 Ω.',
  alt:'Series loop with a 36 volt battery, a 2 amp ammeter, an 8 ohm resistor with voltmeter V1 and a bulb with voltmeter V2.',
  givens:[36,2,8],mk:[],
@@ -500,7 +482,7 @@ const EX=[
   hints:['Is this series or parallel? What does that tell you about the current in the bulb?','To find R you need the voltage and the current of the bulb: R = V / I. Find them one at a time.','Current: 2 A (series). Voltage: VT = V1 + V2. First find V1 = I × R1 for the 8 Ω resistor, then V2 = 36 − V1.'],
   steps:['Series: I = 2 A everywhere','V1 = I × R1 = 2 × 8 = 16 V','VT = V1 + V2, so 36 = 16 + V2 and V2 = 20 V','R2 = V2 / I = 20 / 2 = 10 Ω'],
   wrong:[{v:18,m:'36 ÷ 2 uses the whole battery voltage. The 8 Ω resistor takes some, so the bulb gets only part.'},{v:20,m:'20 V is the voltage across the bulb. Divide it by the current to get resistance.'},{v:8,m:'8 Ω is the resistor, not the bulb.'},{v:16,m:'16 V is the voltage across the resistor, not the resistance of the bulb.'}]}]},
-{id:'e6',nav:'Q10',kicker:'Question 10 · mixed',title:'Find the current through L4',
+{id:'e6',nav:'Q9',kicker:'Question 9 · mixed',title:'Find the current through L4',
  prompt:'The ammeter on R1 reads 0.5 A. R1 = 24 Ω, R2 = 12 Ω and bulb L3 = 6 Ω. Bulb L4 is in series with the three branches.',
  alt:'Battery with bulb L4 in the main wire, then three parallel branches: R1 24 ohm with an ammeter reading 0.5 amps, R2 12 ohm, and bulb L3 6 ohm.',
  givens:[0.5,24,12,6],mk:[],
@@ -510,7 +492,7 @@ const EX=[
   hints:['L4 is in series with the three branches. Does it carry one branch current, or the total?','Find each branch current with I = V / R. In parallel the voltage is the same in every branch. Then IT = I1 + I2 + I3.','R1 = 24 Ω carries 0.5 A, so V = 12 V. Use 12 V for R2 (12 Ω) and L3 (6 Ω).'],
   steps:['V1 = I1 × R1 = 0.5 × 24 = 12 V, so V1 = V2 = V3 = 12 V','I2 = 12 / 12 = 1 A','I3 = 12 / 6 = 2 A','I4 = I1 + I2 + I3 = 0.5 + 1 + 2 = 3.5 A'],
   wrong:[{v:0.5,m:'0.5 A is only R1. L4 carries the current of all three branches together.'},{v:[1.5,2.5,3],m:'You are missing a branch. Add all three branch currents.'},{v:12,m:'12 V is a voltage. The question asks for current in amps.'}]}]},
-{id:'e7',nav:'Q11',kicker:'Question 11 · parallel',title:'Find the resistance of R2',
+{id:'e7',nav:'Q10',kicker:'Question 10 · parallel',title:'Find the resistance of R2',
  prompt:'A 24 V battery. The total current is 6 A. R1 = 12 Ω and R3 = 8 Ω.',
  alt:'Parallel circuit with a 24 volt battery, a 6 amp main ammeter and three resistors: R1 12 ohm, R2 unknown and R3 8 ohm.',
  givens:[24,6,12,8],mk:[],
@@ -589,10 +571,17 @@ function renderParts(focusId){
   $('tutor').hidden=!sample;
 }
 function renderPager(){
-  const i=EX.findIndex(e=>e.id===S.cur);const ex=EX[i];const all=ex.parts.every(p=>P(ex.id,p.id).solved);const last=i===EX.length-1;
+  const i=EX.findIndex(e=>e.id===S.cur);const ex=EX[i];const sts=ex.parts.map(p=>P(ex.id,p.id));
+  const all=sts.every(t=>t.solved);const last=i===EX.length-1;
+  /* The button stays quiet until the student presses Check. Then it answers them:
+     green when the question is solved, orange when something is still wrong. */
+  const checked=sts.some(t=>t.checked);
+  const wrong=sts.some(t=>t.att>0&&!t.solved);   /* a real wrong answer, not an empty box */
+  let look=' ghost';
+  if(checked)look=all?' ok next-ready':(wrong?' warm':'');
   $('prevBtn').disabled=i===0;
   $('nextBtn').textContent=last?'Go to Submit ↓':'Next question →';
-  $('nextBtn').className='btn'+(all?' warm next-ready':' ');
+  $('nextBtn').className='btn'+look;
   $('pageInfo').innerHTML=all?`<span class="done">✓ Question ${i+1} of ${EX.length}</span>`:`Question ${i+1} of ${EX.length}`;
 }
 function renderLog(){
@@ -612,7 +601,8 @@ $('parts').addEventListener('submit',e=>{
   e.preventDefault();const pid=e.target.dataset.form;const ex=exById(S.cur);const p=ex.parts.find(x=>x.id===pid);const st=P(ex.id,pid);
   const inputs=[...e.target.querySelectorAll('input[data-f]')];const typed={};inputs.forEach(i=>typed[i.dataset.f]=i.value);
   const filled=inputs.filter(i=>i.value.trim()!=='');
-  if(!filled.length){st.fb=['Type your answer first.'];save();renderParts();return}
+  st.checked=true;
+  if(!filled.length){st.fb=['Type your answer first.'];save();renderPager();renderParts();return}
   const msgs=[];let anyWrong=false;
   for(const i of filled){
     const f=p.fields.find(q=>(q.k||'x')===i.dataset.f);const v=parseNum(i.value);

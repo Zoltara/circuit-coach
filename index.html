@@ -155,8 +155,6 @@ svg .tagtxt.unk{fill:var(--mt)}
 .fb.bad{background:var(--badbg);color:var(--bad);border:2px solid var(--bad)}
 .fb.warn{background:var(--warnbg);color:var(--warn);border:2px solid var(--hintbar);font-weight:600}
 #backup summary{cursor:pointer;font-size:.9rem;color:var(--muted)}
-.btn.danger{background:transparent;border-color:var(--bad);color:var(--bad)}
-.btn.danger.sure{background:var(--bad);color:#fff}
 .hintlist{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
 .hintlist li{background:var(--warnbg);color:var(--ink);border-left:6px solid var(--hintbar);padding:6px 10px;border-radius:6px;font-size:.95rem}
 .hintlist li b{font-family:var(--mono);font-size:.78rem;color:var(--warn)}
@@ -207,6 +205,8 @@ textarea{width:100%;min-height:64px;padding:8px 10px;border:2px solid var(--line
     </div>
     <div class="leds" id="leds" aria-hidden="true"></div>
   </header>
+
+  <div class="fb good" id="savedBanner" role="status" hidden style="font-size:1.05rem;text-align:center"></div>
 
   <section class="card" aria-labelledby="whoH">
     <h2 id="whoH">Who are you?</h2>
@@ -283,9 +283,6 @@ textarea{width:100%;min-height:64px;padding:8px 10px;border:2px solid var(--line
     <div class="fb bad" id="subErr" role="alert" hidden></div>
     <div id="subOut" hidden style="display:none;flex-direction:column;gap:8px">
       <div class="fb" id="saveState" role="status" aria-live="polite"></div>
-      <div class="row" id="finishRow" hidden style="justify-content:center">
-        <button class="btn danger" id="finishBtn" type="button">Finish and clear this computer</button>
-      </div>
       <details id="backup">
         <summary>My teacher cannot see my result. Show me the backup code.</summary>
         <p class="meta" style="margin:8px 0 6px">Copy this code and send it to your teacher.</p>
@@ -513,6 +510,7 @@ EX.forEach(e=>e.parts.forEach(p=>{if(!p.fields)p.fields=[{k:'',ans:p.ans}]}));
 
 /* ================= State ================= */
 const KEY='circuit-coach-v3';
+const DONE='circuit-coach-done';   /* one-shot: shows the Saved message after the page resets */
 const CLASSES=['3.15','3.16'];
 let S={cls:'',num:'',nick:'',cur:'q5',p:{}};
 /* Work is kept in sessionStorage, not localStorage: it survives a reload or a stray
@@ -687,8 +685,7 @@ function showErr(el,msg){el.textContent=msg;el.hidden=false}
 function sumUp(){let solved=0,wrong=0,hints=0,steps=0,total=0;
   EX.forEach(e=>e.parts.forEach(p=>{const t=P(e.id,p.id);total++;if(t.solved)solved++;wrong+=t.att;hints+=t.hints;if(t.steps)steps++}));
   return {solved,wrong,hints,steps,total}}
-function setState(cls,msg){const el=$('saveState');el.className='fb '+cls;el.innerHTML=msg;
-  $('finishRow').hidden=cls!=='good';restFinish()}
+function setState(cls,msg){const el=$('saveState');el.className='fb '+cls;el.innerHTML=msg}
 let sending=false;
 async function sendResult(){
   const code=$('codeBox').value;const s=sumUp();
@@ -714,7 +711,13 @@ async function doSubmit(){
   setState('','Saving your result...');
   try{
     await sendResult();
-    setState('good','Saved. Your teacher has your result: '+s.solved+' of '+s.total+' parts solved.<br>You can keep working and press Submit again. When you are really finished, press the button below so the next student starts with a clean page.');
+    /* Saved for certain, so this computer is handed to the next student:
+       erase the work and come back on a clean page with a short message. */
+    try{sessionStorage.setItem(DONE,s.solved+' of '+s.total)}catch(e){}
+    wipe();
+    Object.keys(chat).forEach(k=>delete chat[k]);
+    location.replace(location.pathname);
+    return;
   }catch(err){
     if(err&&err.refused){
       // the server answered and said no: the details are wrong, so sending again will not help
@@ -737,21 +740,6 @@ async function doSubmit(){
 }
 $('submitBtn').addEventListener('click',doSubmit);
 
-/* For a shared computer: wipe this student's work so the next one starts clean.
-   Only offered once the result is safely saved. */
-let finishTimer=null;
-function restFinish(){const b=$('finishBtn');if(!b)return;b.classList.remove('sure');b.textContent='Finish and clear this computer';b.dataset.sure='';
-  if(finishTimer){clearTimeout(finishTimer);finishTimer=null}}
-$('finishBtn').addEventListener('click',()=>{
-  const b=$('finishBtn');
-  if(b.dataset.sure!=='1'){
-    b.dataset.sure='1';b.classList.add('sure');b.textContent='Press again to erase my work from this computer';
-    finishTimer=setTimeout(restFinish,10000);return;
-  }
-  wipe();
-  Object.keys(chat).forEach(k=>delete chat[k]);
-  location.replace(location.pathname);
-});
 $('copyCode').addEventListener('click',async()=>{
   const box=$('codeBox');
   try{await navigator.clipboard.writeText(box.value);$('copyMsg').textContent='Copied. Now send it to your teacher.'}
@@ -825,6 +813,16 @@ $('themeBtn').addEventListener('click',()=>{
 paintTheme();
 
 /* ================= Start ================= */
+/* Did we just come back from a successful Submit? Say so once, then forget it. */
+try{
+  const done=sessionStorage.getItem(DONE);
+  if(done){
+    sessionStorage.removeItem(DONE);
+    $('savedBanner').innerHTML='✓ Saved. Your teacher has your result: <b>'+esc(done)+'</b> parts solved.<br>This page is clean and ready for the next student.';
+    $('savedBanner').hidden=false;
+  }
+}catch(e){}
+
 if(!exById(S.cur))S.cur=EX[0].id;
 renderNav();renderEx();
 try{

@@ -134,6 +134,11 @@ svg .tagtxt.unk{fill:var(--mt)}
 .tri{display:flex;gap:14px;align-items:center;margin-top:10px;font-size:.95rem;border-top:1px solid var(--good);padding-top:10px}
 .part{border:2px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .part.solved{border-color:var(--good);background:var(--goodbg)}
+.part.mini{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;cursor:pointer}
+.part.mini:hover{border-color:var(--primary)}
+.part.mini .q{font-size:.92rem;flex:1}
+.part.mini .miniright{display:flex;align-items:center;gap:10px;white-space:nowrap}
+.part.mini .minians{font-family:var(--mono);color:var(--good)}
 .part .q{margin:0;font-weight:500}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .fields{display:flex;flex-direction:column;gap:10px}
@@ -556,8 +561,24 @@ function renderEx(){
   renderParts();renderLog();renderPager();
 }
 function mcStyle(ex,k){const i=(ex.mk||[]).indexOf(k);return i>=0?`style="--mc:var(--m${i+1})"`:''}
+/* Long questions only: once a part is solved AND the student has started a later part,
+   it folds to one line so they are not scrolling back past their finished work.
+   Clicking the line opens it again; `opened` is not saved, so each visit starts folded. */
+const opened={};
+const foldsUp=ex=>ex.parts.length>=4;
+function isFolded(ex,p){
+  if(!foldsUp(ex))return false;
+  const st=P(ex.id,p.id);
+  if(!st.solved||opened[ex.id+'.'+p.id])return false;
+  const i=ex.parts.indexOf(p);
+  return ex.parts.slice(i+1).some(q=>{const t=P(ex.id,q.id);return t.solved||t.checked});
+}
 function partHTML(ex,p){
   const st=P(ex.id,p.id);
+  if(isFolded(ex,p)){
+    const ans=p.fields.map(f=>(f.k?f.k+' = ':'')+(+(+f.ans).toFixed(2))).join(', ');
+    return `<div class="part solved mini" data-expand="${esc(p.id)}" role="button" tabindex="0" aria-label="Open part ${esc(p.id)} again"><p class="q"><b>${esc(p.id)})</b> ${esc(p.q)}</p><div class="miniright"><b class="minians">${esc(ans)} ${esc(p.unit)}</b><span class="meta">✓ open</span></div></div>`;
+  }
   const multi=p.fields.length>1||p.fields[0].k;
   const hints=p.hints.slice(0,st.hints).map((h,i)=>`<li><b>HINT ${i+1}</b> ${esc(h)}</li>`).join('');
   const canSteps=!st.solved&&!st.steps&&(st.hints>=3||st.att>=3);
@@ -637,7 +658,13 @@ $('parts').addEventListener('click',e=>{
   if(h){const p=ex.parts.find(x=>x.id===h.dataset.hint);const st=P(ex.id,p.id);const typed={};document.querySelectorAll('#parts input[data-f]').forEach(i=>typed[i.id]=i.value);
     if(st.hints<3)st.hints++;save();renderParts();Object.keys(typed).forEach(id=>{const el=document.getElementById(id);if(el)el.value=typed[id]});return}
   const s=e.target.closest('[data-steps]');
-  if(s){const p=ex.parts.find(x=>x.id===s.dataset.steps);P(ex.id,p.id).steps=true;save();renderParts()}
+  if(s){const p=ex.parts.find(x=>x.id===s.dataset.steps);P(ex.id,p.id).steps=true;save();renderParts();return}
+  const o=e.target.closest('[data-expand]');
+  if(o){opened[ex.id+'.'+o.dataset.expand]=true;renderParts()}
+});
+$('parts').addEventListener('keydown',e=>{
+  const o=e.target.closest('[data-expand]');
+  if(o&&(e.key==='Enter'||e.key===' ')){e.preventDefault();opened[exById(S.cur).id+'.'+o.dataset.expand]=true;renderParts()}
 });
 
 /* ================= Student details ================= */
